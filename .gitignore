@@ -1,0 +1,34 @@
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace files
+*.prof
+*.coverprofile
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fyne build artifacts
+fyne-cross/
+*.app/
+*.app.zip
+*.apk
+*.aab
+*.ipa
+*.xcarchive/
+
+# Logs
+*.log
