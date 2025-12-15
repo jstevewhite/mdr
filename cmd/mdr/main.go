@@ -1,16 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"flag"
-	"io/ioutil"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
-	"github.com/yuin/goldmark"
 )
 
 func main() {
@@ -23,34 +21,23 @@ func main() {
 	window := myApp.NewWindow("Markdown Renderer")
 	window.Resize(fyne.NewSize(800, 600))
 
-	// Create a label to display the markdown content
-	content := widget.NewLabel("Open a markdown file using File > Open or drag a file onto the window.")
-	content.Wrapping = fyne.TextWrapWord
+	preview := widget.NewRichTextFromMarkdown("Open a markdown file using **File > Open** or drag a file onto the window.")
+	preview.Wrapping = fyne.TextWrapWord
 
 	// Create a scroll container for the content
-	scroll := container.NewScroll(content)
+	scroll := container.NewScroll(preview)
 	window.SetContent(scroll)
 
 	// Function to load and render markdown
 	loadMarkdown := func(path string) {
 		// Read the file
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
-			content.SetText("Error reading file: " + err.Error())
+			preview.ParseMarkdown("Error reading file: " + err.Error())
 			return
 		}
 
-		// Convert markdown to HTML
-		var buf bytes.Buffer
-		err = goldmark.Convert(data, &buf)
-		if err != nil {
-			content.SetText("Error rendering markdown: " + err.Error())
-			return
-		}
-
-		// For now, we'll just display the raw HTML
-		// In a real app, you'd want to use a webview or HTML renderer
-		content.SetText(buf.String())
+		preview.ParseMarkdown(string(data))
 	}
 
 	// If a file was specified on the command line, open it
@@ -68,6 +55,9 @@ func main() {
 	// Create a file open dialog
 	openItem := fyne.NewMenuItem("Open", func() {
 		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if reader != nil {
+				defer reader.Close()
+			}
 			if err == nil && reader != nil {
 				loadMarkdown(reader.URI().Path())
 			}
