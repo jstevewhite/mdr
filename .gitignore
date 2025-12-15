@@ -9,6 +9,7 @@
 
 # Local build binaries
 /main
+/mdr
 
 # Go workspace files
 *.prof

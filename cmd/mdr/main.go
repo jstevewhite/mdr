@@ -94,8 +94,9 @@ func (l *maxWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 func main() {
 	// Parse command line arguments
-	fileName := flag.String("file", "", "Markdown file to open")
+	fileName := flag.String("file", "", "Markdown file to open (fallback if no positional args)")
 	flag.Parse()
+	posArgs := flag.Args()
 
 	// Create a new Fyne application
 	myApp := app.NewWithID("com.jstevewhite.mdr")
@@ -197,8 +198,11 @@ func main() {
 		preview.ParseMarkdown(string(data))
 	}
 
-	// If a file was specified on the command line, open it
-	if *fileName != "" {
+	// If a file was specified on the command line, open it.
+	// Supports: `mdr README.md` or `mdr *.md` (shell expands glob, we take the first).
+	if len(posArgs) > 0 {
+		loadMarkdown(posArgs[0])
+	} else if *fileName != "" {
 		loadMarkdown(*fileName)
 	}
 
