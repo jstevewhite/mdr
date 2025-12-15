@@ -172,7 +172,7 @@ func main() {
 
 	applyTheme()
 
-	window := myApp.NewWindow("Markdown Renderer")
+	window := myApp.NewWindow("mdr - Markdown Renderer")
 	window.Resize(fyne.NewSize(800, 600))
 
 	preview := widget.NewRichTextFromMarkdown("Open a markdown file using **File > Open** or drag a file onto the window.")
