@@ -7,6 +7,9 @@
 *.test
 *.out
 
+# Local build binaries
+/main
+
 # Go workspace files
 *.prof
 *.coverprofile
