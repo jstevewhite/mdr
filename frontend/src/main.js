@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { GetFontScale, GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPalette, SetFontScale, SetPalette, SetTheme, StartWatchingFile, StopWatchingFile } from '../wailsjs/go/main/App';
+import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, StartWatchingFile, StopWatchingFile } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
@@ -9,6 +9,11 @@ document.querySelector('#app').innerHTML = `
     <header class="toolbar">
       <div class="brand">mdr</div>
       <div class="controls">
+        <button id="tocToggle" class="btn" title="Toggle Table of Contents">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M0 2h16v2H0V2zm0 5h16v2H0V7zm0 5h16v2H0v-2z"/>
+          </svg>
+        </button>
         <div class="font">
           <button id="fontDec" class="btn" title="Decrease font size">A-</button>
           <div id="fontVal" class="fontVal">100%</div>
@@ -31,6 +36,17 @@ document.querySelector('#app').innerHTML = `
       <div id="path" class="path"></div>
     </header>
     <main class="content">
+      <aside id="tocSidebar" class="toc-sidebar">
+        <div class="toc-header">
+          <span>Table of Contents</span>
+          <button id="tocPin" class="toc-pin-btn" title="Pin sidebar">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4 9h8v1H4zm0-3h8v1H4zm0-3h8v1H4z"/>
+            </svg>
+          </button>
+        </div>
+        <nav id="tocNav" class="toc-nav"></nav>
+      </aside>
       <iframe id="preview" class="preview"></iframe>
       <div id="status" class="status"></div>
     </main>
@@ -47,10 +63,17 @@ const fontDecEl = document.getElementById('fontDec');
 const fontIncEl = document.getElementById('fontInc');
 const fontValEl = document.getElementById('fontVal');
 const autoReloadEl = document.getElementById('autoReload');
+const tocToggleEl = document.getElementById('tocToggle');
+const tocSidebarEl = document.getElementById('tocSidebar');
+const tocNavEl = document.getElementById('tocNav');
+const tocPinEl = document.getElementById('tocPin');
 
 let currentPath = '';
 let fontScale = 100;
 let autoReloadEnabled = false;
+let tocVisible = false;
+let tocPinned = false;
+let currentTOC = [];
 
 function setControlsEnabled(enabled) {
   const disabled = !enabled;
@@ -95,6 +118,93 @@ function setPreview(html) {
   setStatus(`Loaded ${doc.length} chars`);
 }
 
+function renderTOC(toc) {
+  currentTOC = toc || [];
+
+  if (!currentTOC.length) {
+    tocNavEl.innerHTML = '<div class="toc-empty">No headings found</div>';
+    return;
+  }
+
+  let html = '';
+  for (const item of currentTOC) {
+    const indent = (item.level - 1) * 16;
+    html += `<a href="#${item.id}" class="toc-item toc-level-${item.level}" style="padding-left: ${indent}px" data-id="${item.id}">${item.text}</a>`;
+  }
+
+  tocNavEl.innerHTML = html;
+
+  // Add click handlers for TOC items
+  tocNavEl.querySelectorAll('.toc-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = item.dataset.id;
+      // Send message to iframe to scroll to section
+      try {
+        const el = previewEl.contentWindow.document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (err) {
+        console.error('Failed to scroll to section:', err);
+      }
+    });
+  });
+}
+
+function toggleTOC() {
+  tocVisible = !tocVisible;
+  tocSidebarEl.classList.toggle('visible', tocVisible);
+}
+
+function togglePin() {
+  tocPinned = !tocPinned;
+  tocSidebarEl.classList.toggle('pinned', tocPinned);
+
+  // Update preview margin
+  if (tocPinned) {
+    previewEl.style.marginLeft = '280px';
+  } else {
+    previewEl.style.marginLeft = '0';
+  }
+
+  // Update pin button icon
+  if (tocPinned) {
+    tocPinEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707l-4.95 4.95a.5.5 0 0 1-.707 0l-4.95-4.95a.5.5 0 0 1 0-.707l4.95-4.95a.5.5 0 0 1 .353-.146z"/>
+    </svg>`;
+    tocPinEl.title = 'Unpin sidebar';
+  } else {
+    tocPinEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M4 9h8v1H4zm0-3h8v1H4zm0-3h8v1H4z"/>
+    </svg>`;
+    tocPinEl.title = 'Pin sidebar';
+  }
+}
+
+function updateTOCTheme() {
+  const palette = paletteEl.value;
+
+  // Apply theme class based on current palette
+  if (palette === 'dark') {
+    tocSidebarEl.classList.add('dark-theme');
+    tocSidebarEl.classList.remove('light-theme');
+  } else if (palette === 'light') {
+    tocSidebarEl.classList.add('light-theme');
+    tocSidebarEl.classList.remove('dark-theme');
+  } else {
+    // 'theme' - use system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) {
+      tocSidebarEl.classList.add('dark-theme');
+      tocSidebarEl.classList.remove('light-theme');
+    } else {
+      tocSidebarEl.classList.add('light-theme');
+      tocSidebarEl.classList.remove('dark-theme');
+    }
+  }
+}
+
 async function openAndRender() {
   setStatus('');
   try {
@@ -106,7 +216,11 @@ async function openAndRender() {
     }
     currentPath = res.path;
     pathEl.textContent = currentPath;
-    requestAnimationFrame(() => setPreview(res.html));
+    requestAnimationFrame(() => {
+      setPreview(res.html);
+      renderTOC(res.toc);
+      updateTOCTheme();
+    });
 
     // Start watching the file if auto-reload is enabled
     if (autoReloadEnabled && currentPath) {
@@ -130,8 +244,12 @@ async function rerender() {
   try {
     const theme = themeEl.value;
     const palette = paletteEl.value;
-    const html = await RenderFileWithPalette(currentPath, theme, palette);
-    requestAnimationFrame(() => setPreview(html));
+    const res = await RenderFileWithPaletteAndTOC(currentPath, theme, palette);
+    requestAnimationFrame(() => {
+      setPreview(res.html);
+      renderTOC(res.toc);
+      updateTOCTheme();
+    });
   } catch (err) {
     console.error(err);
     setError(err);
@@ -139,6 +257,13 @@ async function rerender() {
 }
 
 openEl.addEventListener('click', openAndRender);
+
+tocToggleEl.addEventListener('click', toggleTOC);
+
+tocPinEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  togglePin();
+});
 
 fontDecEl.addEventListener('click', async () => {
   fontScale = Math.max(50, fontScale - 10);
@@ -176,11 +301,19 @@ paletteEl.addEventListener('change', async () => {
   } catch (err) {
     console.error(err);
   }
+  updateTOCTheme();
   await rerender();
 });
 
 autoReloadEl.addEventListener('change', async () => {
   autoReloadEnabled = autoReloadEl.checked;
+
+  // Save the auto-reload state
+  try {
+    await SetAutoReload(autoReloadEnabled);
+  } catch (err) {
+    console.error('Failed to save auto-reload setting:', err);
+  }
 
   if (autoReloadEnabled && currentPath) {
     // Enable watching
@@ -251,6 +384,14 @@ async function renderInitialArgs() {
       updateFontUI();
     }
 
+    try {
+      const savedAutoReload = await GetAutoReload();
+      autoReloadEnabled = savedAutoReload;
+      autoReloadEl.checked = savedAutoReload;
+    } catch (err) {
+      console.error(err);
+    }
+
     const args = await GetLaunchArgs();
     if (!args || args.length < 1) {
       return;
@@ -258,8 +399,17 @@ async function renderInitialArgs() {
     currentPath = args[0];
     pathEl.textContent = currentPath;
 
-    setTimeout(() => {
-      rerender();
+    setTimeout(async () => {
+      await rerender();
+
+      // Start watching if auto-reload is enabled
+      if (autoReloadEnabled && currentPath) {
+        try {
+          await StartWatchingFile(currentPath);
+        } catch (err) {
+          console.error('Failed to start watching file:', err);
+        }
+      }
     }, 0);
   } catch (err) {
     console.error(err);

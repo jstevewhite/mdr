@@ -199,3 +199,28 @@ func setFontScaleInConfig(scale int) error {
 	cfg["fontScale"] = strconv.Itoa(scale)
 	return writeConfig(cfg)
 }
+
+func getAutoReloadFromConfig() bool {
+	cfg, err := readConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["autoReload"])
+	return v == "true" || v == "1" || v == "yes"
+}
+
+func setAutoReloadInConfig(enabled bool) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if enabled {
+		cfg["autoReload"] = "true"
+	} else {
+		cfg["autoReload"] = "false"
+	}
+
+	return writeConfig(cfg)
+}

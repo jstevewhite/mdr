@@ -6,11 +6,15 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
 )
 
 type renderTheme string
@@ -27,6 +31,22 @@ const (
 	paletteLight paletteMode = paletteMode(themeLight)
 	paletteDark  paletteMode = paletteMode(themeDark)
 )
+
+// TOCItem represents a table of contents entry
+type TOCItem struct {
+	ID    string `json:"id"`
+	Text  string `json:"text"`
+	Level int    `json:"level"`
+}
+
+// generateID creates a URL-friendly ID from text
+func generateID(text string) string {
+	// Convert to lowercase and replace spaces/special chars with hyphens
+	reg := regexp.MustCompile(`[^a-z0-9]+`)
+	id := reg.ReplaceAllString(strings.ToLower(text), "-")
+	id = strings.Trim(id, "-")
+	return id
+}
 
 func normalizeTheme(name string) renderTheme {
 	switch renderTheme(name) {
@@ -96,7 +116,53 @@ func themeCSSByName(themeName string) string {
 	return string(b)
 }
 
-func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette string, fontScale int) (string, error) {
+// RenderOutput contains both the HTML and TOC
+type RenderOutput struct {
+	HTML string
+	TOC  []TOCItem
+}
+
+// extractTOC walks the AST and extracts heading information
+func extractTOC(source []byte, node ast.Node) []TOCItem {
+	var items []TOCItem
+	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		if heading, ok := n.(*ast.Heading); ok {
+			// Extract text content
+			var textBuf bytes.Buffer
+			for c := heading.FirstChild(); c != nil; c = c.NextSibling() {
+				if textNode, ok := c.(*ast.Text); ok {
+					textBuf.Write(textNode.Segment.Value(source))
+				} else if c.Kind() == ast.KindString {
+					textBuf.Write(c.Text(source))
+				}
+			}
+
+			text := textBuf.String()
+			if text != "" {
+				id := generateID(text)
+				// Set ID attribute on the heading
+				heading.SetAttributeString("id", []byte(id))
+
+				items = append(items, TOCItem{
+					ID:    id,
+					Text:  text,
+					Level: heading.Level,
+				})
+			}
+		}
+
+		return ast.WalkContinue, nil
+	})
+
+	return items
+}
+
+// RenderMarkdownWithTOC renders markdown and returns HTML with TOC
+func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fontScale int) (RenderOutput, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
@@ -108,11 +174,20 @@ func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette str
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
 		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
 	)
 
+	source := []byte(markdown)
+	doc := md.Parser().Parse(text.NewReader(source))
+
+	// Extract TOC before rendering
+	toc := extractTOC(source, doc)
+
 	var buf bytes.Buffer
-	if err := md.Convert([]byte(markdown), &buf); err != nil {
-		return "", err
+	if err := md.Renderer().Render(&buf, source, doc); err != nil {
+		return RenderOutput{}, err
 	}
 
 	layoutCSS := themeCSSByName(themeName)
@@ -131,13 +206,21 @@ func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette str
 
 	tmpl, err := template.New("page").Parse(page)
 	if err != nil {
-		return "", err
+		return RenderOutput{}, err
 	}
 
 	var out bytes.Buffer
 	if err := tmpl.Execute(&out, map[string]any{"Body": template.HTML(buf.String())}); err != nil {
-		return "", err
+		return RenderOutput{}, err
 	}
 
-	return out.String(), nil
+	return RenderOutput{
+		HTML: out.String(),
+		TOC:  toc,
+	}, nil
+}
+
+func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette string, fontScale int) (string, error) {
+	output, err := RenderMarkdownWithTOC(markdown, themeName, palette, fontScale)
+	return output.HTML, err
 }

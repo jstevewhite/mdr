@@ -48,8 +48,9 @@ func (a *App) Greet(name string) string {
 }
 
 type RenderResult struct {
-	Path string `json:"path"`
-	HTML string `json:"html"`
+	Path string    `json:"path"`
+	HTML string    `json:"html"`
+	TOC  []TOCItem `json:"toc"`
 }
 
 func (a *App) RenderMarkdown(markdown string, theme string) (string, error) {
@@ -82,6 +83,14 @@ func (a *App) GetFontScale() int {
 
 func (a *App) SetFontScale(scale int) error {
 	return setFontScaleInConfig(scale)
+}
+
+func (a *App) GetAutoReload() bool {
+	return getAutoReloadFromConfig()
+}
+
+func (a *App) SetAutoReload(enabled bool) error {
+	return setAutoReloadInConfig(enabled)
 }
 
 func (a *App) ListThemes() ([]string, error) {
@@ -144,6 +153,26 @@ func (a *App) RenderFileWithPalette(path string, theme string, palette string) (
 	return RenderMarkdownToHTMLDocument(string(data), theme, palette, getFontScaleFromConfig())
 }
 
+// RenderFileWithPaletteAndTOC renders a file and returns HTML with TOC
+func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette string) (RenderResult, error) {
+	path = normalizePath(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return RenderResult{}, err
+	}
+
+	output, err := RenderMarkdownWithTOC(string(data), theme, palette, getFontScaleFromConfig())
+	if err != nil {
+		return RenderResult{}, err
+	}
+
+	return RenderResult{
+		Path: path,
+		HTML: output.HTML,
+		TOC:  output.TOC,
+	}, nil
+}
+
 func (a *App) OpenAndRender(theme string, palette string) (RenderResult, error) {
 	selection, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title: "Open Markdown",
@@ -161,12 +190,12 @@ func (a *App) OpenAndRender(theme string, palette string) (RenderResult, error) 
 		return RenderResult{}, nil
 	}
 
-	html, err := a.RenderFileWithPalette(selection, theme, palette)
+	result, err := a.RenderFileWithPaletteAndTOC(selection, theme, palette)
 	if err != nil {
 		return RenderResult{}, err
 	}
 
-	return RenderResult{Path: selection, HTML: html}, nil
+	return result, nil
 }
 
 func (a *App) GetLaunchArgs() []string {
