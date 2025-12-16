@@ -28,6 +28,7 @@ Settings are stored in:
 - **Go** (matching `go.mod`)
 - **Node.js + npm** (for the frontend build)
 - **Wails CLI v2**
+  - Install: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
 
 ### macOS (primary)
 
@@ -51,12 +52,13 @@ Output:
 Common dependencies (Debian/Ubuntu-style):
 
 - `libgtk-3-dev`
-- `libwebkit2gtk-4.0-dev`
+- `libwebkit2gtk-4.0-dev` OR `libwebkit2gtk-4.1-dev`
 - `pkg-config`
 
 Build:
 
-- `wails build`
+- `make build` (Recommended - handles WebKit version detection automatically)
+- Or manually: `wails build -tags webkit2_41` (if using WebKit 4.1)
 
 Output:
 
