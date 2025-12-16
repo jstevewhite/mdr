@@ -17,6 +17,7 @@
 ### Wails
 /build/bin
 /frontend/dist
+/frontend/node_modules
 /node_modules
 
 ### OS
