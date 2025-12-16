@@ -1,4 +1,4 @@
-# Go build outputs
+### Go
 *.exe
 *.exe~
 *.dll
@@ -7,32 +7,27 @@
 *.test
 *.out
 
-# Local build binaries
-/main
-/mdr
-
-# Go workspace files
 *.prof
 *.coverprofile
 
-# OS files
+### Local build binaries
+/mdr
+/main
+
+### Wails
+/build/bin
+/frontend/dist
+/node_modules
+
+### OS
 .DS_Store
 Thumbs.db
 
-# Editor/IDE
+### Editor/IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Fyne build artifacts
-fyne-cross/
-*.app/
-*.app.zip
-*.apk
-*.aab
-*.ipa
-*.xcarchive/
-
-# Logs
+### Logs
 *.log

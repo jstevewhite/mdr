@@ -1,34 +1,78 @@
 # mdr
 
-`mdr` is a cross-platform Markdown viewer.
+`mdr` is a cross-platform Markdown viewer built with Wails.
 
-## Primary App (Wails)
+## Features
 
-The actively developed app lives in:
+- Open and render local Markdown files
+- Layout themes via user CSS files in `~/.config/mdr/mdthemes/`
+- Palette override: `light` / `dark` / `theme`
+- Font size controls with persistence
 
-- `wails-mdr/`
+Settings are stored in:
 
-It uses:
+- `~/.config/mdr/mdr.conf`
 
-- Go backend + Goldmark for Markdown rendering
-- Wails (WebView-based UI)
-- CSS layout themes from `~/.config/mdr/mdthemes/`
-- Persisted settings in `~/.config/mdr/mdr.conf`
+## Development
 
-For development and packaging instructions, see:
+- `wails dev`
 
-- `wails-mdr/README.md`
+## Building
 
-## Themes
+- `wails build`
 
-To add a custom layout theme, drop a `.css` file into:
+## Building & Packaging Notes
 
-- `~/.config/mdr/mdthemes/`
+### Prerequisites (all platforms)
 
-The theme name is the filename without the `.css` extension.
+- **Go** (matching `go.mod`)
+- **Node.js + npm** (for the frontend build)
+- **Wails CLI v2**
 
-## Legacy/Experimental Code
+### macOS (primary)
 
-There is also older/experimental GUI code under:
+- **WebView runtime**: Uses the system WebKit (built-in).
+- **Tooling**:
+  - Install Xcode Command Line Tools (`xcode-select --install`).
 
-- `cmd/mdr/`
+Build:
+
+- `wails build`
+
+Output:
+
+- `build/bin/mdr.app` (and the embedded binary at `build/bin/mdr.app/Contents/MacOS/mdr`)
+
+### Linux (primary)
+
+- **WebView runtime**: Uses WebKitGTK.
+- **Important**: Linux builds typically require **CGO** and the system GTK/WebKit dev libraries, so the most reliable path is to build **on Linux**.
+
+Common dependencies (Debian/Ubuntu-style):
+
+- `libgtk-3-dev`
+- `libwebkit2gtk-4.0-dev`
+- `pkg-config`
+
+Build:
+
+- `wails build`
+
+Output:
+
+- `build/bin/mdr` (ELF binary)
+
+### Windows (optional)
+
+- **WebView runtime**: Microsoft Edge WebView2 runtime.
+- **Tooling**:
+  - MSVC build tools (Visual Studio Build Tools)
+  - WebView2 runtime installed on target machines
+
+Build:
+
+- `wails build`
+
+Output:
+
+- Windows installer/assets are generated under `build/` depending on your Wails configuration.
