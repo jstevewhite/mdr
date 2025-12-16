@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -59,11 +60,11 @@ func normalizePalette(p string) paletteMode {
 func paletteCSSByMode(p paletteMode) string {
 	switch p {
 	case paletteDark:
-		return themeCSS(themeDark)
+		return "html,body{background:#0d1117;color:#c9d1d9}#wrapper{color:#c9d1d9}#wrapper p,#wrapper td,#wrapper div,#wrapper li,#wrapper h1,#wrapper h2,#wrapper h3,#wrapper h4,#wrapper h5,#wrapper h6,#wrapper th,#wrapper caption,#wrapper dt,#wrapper dd,#wrapper span{color:inherit}#wrapper a{color:#58a6ff}#wrapper pre,#wrapper code{background:#161b22}#wrapper blockquote{color:#8b949e;border-left:4px solid #30363d}#wrapper hr{border:0;border-top:1px solid #30363d}#wrapper table{border-collapse:collapse}#wrapper th,#wrapper td{border:1px solid #30363d;padding:6px 10px}#wrapper figcaption{background:transparent;color:inherit}"
 	case paletteTheme:
 		return ""
 	default:
-		return themeCSS(themeLight)
+		return "html,body{background:#ffffff;color:#1f2328}#wrapper{color:#1f2328}#wrapper p,#wrapper td,#wrapper div,#wrapper li,#wrapper h1,#wrapper h2,#wrapper h3,#wrapper h4,#wrapper h5,#wrapper h6,#wrapper th,#wrapper caption,#wrapper dt,#wrapper dd,#wrapper span{color:inherit}#wrapper a{color:#0969da}#wrapper pre,#wrapper code{background:#f6f8fa}#wrapper blockquote{color:#57606a;border-left:4px solid #d0d7de}#wrapper hr{border:0;border-top:1px solid #d0d7de}#wrapper table{border-collapse:collapse}#wrapper th,#wrapper td{border:1px solid #d0d7de;padding:6px 10px}#wrapper figcaption{background:transparent;color:inherit}"
 	}
 }
 
@@ -79,7 +80,7 @@ func themeCSSByName(themeName string) string {
 
 	dir, err := themesDir()
 	if err != nil {
-		return themeCSS(themeLight)
+		return ""
 	}
 
 	name := filepath.Base(themeName)
@@ -95,7 +96,7 @@ func themeCSSByName(themeName string) string {
 	return string(b)
 }
 
-func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette string) (string, error) {
+func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette string, fontScale int) (string, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
@@ -117,11 +118,14 @@ func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette str
 	layoutCSS := themeCSSByName(themeName)
 	pMode := normalizePalette(palette)
 	palCSS := paletteCSSByMode(pMode)
-
-	baseCSS := "body{margin:0}img{max-width:100%}pre{overflow:auto}"
-	if strings.TrimSpace(themeName) == "" || strings.TrimSpace(themeName) == "default" {
-		baseCSS += "#wrapper{padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%}"
+	if fontScale < 50 {
+		fontScale = 50
 	}
+	if fontScale > 200 {
+		fontScale = 200
+	}
+
+	baseCSS := fmt.Sprintf("body{margin:0}img{max-width:100%%}pre{overflow:auto}#wrapper{font-size:%d%% !important;padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%%}", fontScale)
 
 	page := "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>" + baseCSS + layoutCSS + palCSS + "</style></head><body><div id=\"wrapper\">{{.Body}}</div></body></html>"
 

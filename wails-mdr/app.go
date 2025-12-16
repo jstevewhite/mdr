@@ -50,11 +50,11 @@ type RenderResult struct {
 }
 
 func (a *App) RenderMarkdown(markdown string, theme string) (string, error) {
-	return RenderMarkdownToHTMLDocument(markdown, theme, getPaletteFromConfig())
+	return RenderMarkdownToHTMLDocument(markdown, theme, getPaletteFromConfig(), getFontScaleFromConfig())
 }
 
 func (a *App) RenderMarkdownWithPalette(markdown string, theme string, palette string) (string, error) {
-	return RenderMarkdownToHTMLDocument(markdown, theme, palette)
+	return RenderMarkdownToHTMLDocument(markdown, theme, palette, getFontScaleFromConfig())
 }
 
 func (a *App) GetTheme() string {
@@ -73,8 +73,16 @@ func (a *App) SetPalette(palette string) error {
 	return setPaletteInConfig(palette)
 }
 
+func (a *App) GetFontScale() int {
+	return getFontScaleFromConfig()
+}
+
+func (a *App) SetFontScale(scale int) error {
+	return setFontScaleInConfig(scale)
+}
+
 func (a *App) ListThemes() ([]string, error) {
-	items := []string{string(themeLight), string(themeDark)}
+	items := []string{"default"}
 
 	dir, err := themesDir()
 	if err != nil {
@@ -109,8 +117,15 @@ func (a *App) ListThemes() ([]string, error) {
 		uniq = append(uniq, it)
 	}
 
-	sort.Strings(uniq)
-	return uniq, nil
+	var defaultFirst []string
+	for _, it := range uniq {
+		if it == "default" {
+			continue
+		}
+		defaultFirst = append(defaultFirst, it)
+	}
+	sort.Strings(defaultFirst)
+	return append([]string{"default"}, defaultFirst...), nil
 }
 
 func (a *App) RenderFile(path string, theme string) (string, error) {
@@ -123,7 +138,7 @@ func (a *App) RenderFileWithPalette(path string, theme string, palette string) (
 	if err != nil {
 		return "", err
 	}
-	return RenderMarkdownToHTMLDocument(string(data), theme, palette)
+	return RenderMarkdownToHTMLDocument(string(data), theme, palette, getFontScaleFromConfig())
 }
 
 func (a *App) OpenAndRender(theme string, palette string) (RenderResult, error) {

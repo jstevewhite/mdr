@@ -1,13 +1,18 @@
 import './style.css';
 import './app.css';
 
-import { GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPalette, SetPalette, SetTheme } from '../wailsjs/go/main/App';
+import { GetFontScale, GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPalette, SetFontScale, SetPalette, SetTheme } from '../wailsjs/go/main/App';
 
 document.querySelector('#app').innerHTML = `
   <div class="shell">
     <header class="toolbar">
       <div class="brand">mdr</div>
       <div class="controls">
+        <div class="font">
+          <button id="fontDec" class="btn" title="Decrease font size">A-</button>
+          <div id="fontVal" class="fontVal">100%</div>
+          <button id="fontInc" class="btn" title="Increase font size">A+</button>
+        </div>
         <select id="theme" class="select">
           <option value="default">default</option>
         </select>
@@ -33,8 +38,27 @@ const openEl = document.getElementById('open');
 const pathEl = document.getElementById('path');
 const previewEl = document.getElementById('preview');
 const statusEl = document.getElementById('status');
+const fontDecEl = document.getElementById('fontDec');
+const fontIncEl = document.getElementById('fontInc');
+const fontValEl = document.getElementById('fontVal');
 
 let currentPath = '';
+let fontScale = 100;
+
+function setControlsEnabled(enabled) {
+  const disabled = !enabled;
+  if (fontDecEl) fontDecEl.disabled = disabled;
+  if (fontIncEl) fontIncEl.disabled = disabled;
+  if (themeEl) themeEl.disabled = disabled;
+  if (paletteEl) paletteEl.disabled = disabled;
+  if (openEl) openEl.disabled = disabled;
+}
+
+function updateFontUI() {
+  if (fontValEl) {
+    fontValEl.textContent = `${fontScale}%`;
+  }
+}
 
 function setStatus(msg) {
   statusEl.dataset.level = 'info';
@@ -99,6 +123,28 @@ async function rerender() {
 }
 
 openEl.addEventListener('click', openAndRender);
+
+fontDecEl.addEventListener('click', async () => {
+  fontScale = Math.max(50, fontScale - 10);
+  updateFontUI();
+  try {
+    await SetFontScale(fontScale);
+  } catch (err) {
+    console.error(err);
+  }
+  await rerender();
+});
+
+fontIncEl.addEventListener('click', async () => {
+  fontScale = Math.min(200, fontScale + 10);
+  updateFontUI();
+  try {
+    await SetFontScale(fontScale);
+  } catch (err) {
+    console.error(err);
+  }
+  await rerender();
+});
 themeEl.addEventListener('change', async () => {
   try {
     await SetTheme(themeEl.value);
@@ -119,6 +165,7 @@ paletteEl.addEventListener('change', async () => {
 
 async function renderInitialArgs() {
   try {
+    setControlsEnabled(false);
     try {
       const themes = await ListThemes();
       if (themes && themes.length) {
@@ -152,6 +199,17 @@ async function renderInitialArgs() {
       console.error(err);
     }
 
+    try {
+      const savedScale = await GetFontScale();
+      if (savedScale) {
+        fontScale = savedScale;
+      }
+      updateFontUI();
+    } catch (err) {
+      console.error(err);
+      updateFontUI();
+    }
+
     const args = await GetLaunchArgs();
     if (!args || args.length < 1) {
       return;
@@ -164,8 +222,12 @@ async function renderInitialArgs() {
     }, 0);
   } catch (err) {
     console.error(err);
+  } finally {
+    setControlsEnabled(true);
   }
 }
 
 setPreview('');
+updateFontUI();
+setControlsEnabled(false);
 renderInitialArgs();

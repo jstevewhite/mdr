@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -155,5 +156,46 @@ func setPaletteInConfig(palette string) error {
 	}
 
 	cfg["palette"] = p
+	return writeConfig(cfg)
+}
+
+func getFontScaleFromConfig() int {
+	cfg, err := readConfig()
+	if err != nil {
+		return 100
+	}
+
+	v := strings.TrimSpace(cfg["fontScale"])
+	if v == "" {
+		return 100
+	}
+
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 100
+	}
+	if n < 50 {
+		return 50
+	}
+	if n > 200 {
+		return 200
+	}
+	return n
+}
+
+func setFontScaleInConfig(scale int) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if scale < 50 {
+		scale = 50
+	}
+	if scale > 200 {
+		scale = 200
+	}
+
+	cfg["fontScale"] = strconv.Itoa(scale)
 	return writeConfig(cfg)
 }
