@@ -3,7 +3,7 @@ WAILS=$(shell go env GOPATH)/bin/wails
 # Detect the operating system
 UNAME_S := $(shell uname -s)
 
-.PHONY: build run dev clean
+.PHONY: build run dev clean install
 
 # Universal build target - automatically detects OS
 build:
@@ -43,6 +43,26 @@ else ifeq ($(UNAME_S),Linux)
 	./build/bin/mdr
 else ifeq ($(UNAME_S),MINGW64_NT)
 	./build/bin/mdr.exe
+endif
+
+# Install the application based on OS
+install:
+ifeq ($(UNAME_S),Darwin)
+	@echo "Installing for macOS..."
+	@mkdir -p ~/Applications
+	@cp -r build/bin/mdr.app ~/Applications/
+	@echo "Installed mdr.app to ~/Applications/"
+else ifeq ($(UNAME_S),Linux)
+	@echo "Installing for Linux..."
+	@cp build/bin/mdr /usr/local/bin/
+	@chmod +x /usr/local/bin/mdr
+	@echo "Installed mdr binary to /usr/local/bin/"
+else ifeq ($(UNAME_S),MINGW64_NT)
+	@echo "Installing for Windows..."
+	@echo "Windows installation not yet implemented"
+else
+	@echo "Unsupported platform for installation: $(UNAME_S)"
+	@exit 1
 endif
 
 # Clean build artifacts
