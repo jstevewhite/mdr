@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -15,6 +16,8 @@ import (
 type App struct {
 	ctx        context.Context
 	launchArgs []string
+	watcher    *fsnotify.Watcher
+	watchedFile string
 }
 
 // NewApp creates a new App application struct
@@ -168,6 +171,64 @@ func (a *App) OpenAndRender(theme string, palette string) (RenderResult, error) 
 
 func (a *App) GetLaunchArgs() []string {
 	return a.launchArgs
+}
+
+// StartWatchingFile starts watching the specified file for changes
+func (a *App) StartWatchingFile(path string) error {
+	// Stop watching any previously watched file
+	a.StopWatchingFile()
+
+	path = normalizePath(path)
+	if path == "" {
+		return fmt.Errorf("invalid file path")
+	}
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+
+	err = watcher.Add(path)
+	if err != nil {
+		watcher.Close()
+		return err
+	}
+
+	a.watcher = watcher
+	a.watchedFile = path
+
+	// Start goroutine to watch for file changes
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				// Handle write and create events (some editors use create instead of write)
+				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
+					// Emit event to frontend
+					runtime.EventsEmit(a.ctx, "file-changed", path)
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				runtime.EventsEmit(a.ctx, "file-watch-error", err.Error())
+			}
+		}
+	}()
+
+	return nil
+}
+
+// StopWatchingFile stops watching the current file
+func (a *App) StopWatchingFile() {
+	if a.watcher != nil {
+		a.watcher.Close()
+		a.watcher = nil
+		a.watchedFile = ""
+	}
 }
 
 func normalizePath(p string) string {

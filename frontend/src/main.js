@@ -1,7 +1,8 @@
 import './style.css';
 import './app.css';
 
-import { GetFontScale, GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPalette, SetFontScale, SetPalette, SetTheme } from '../wailsjs/go/main/App';
+import { GetFontScale, GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPalette, SetFontScale, SetPalette, SetTheme, StartWatchingFile, StopWatchingFile } from '../wailsjs/go/main/App';
+import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
   <div class="shell">
@@ -21,6 +22,10 @@ document.querySelector('#app').innerHTML = `
           <option value="dark">dark</option>
           <option value="theme">theme</option>
         </select>
+        <label class="auto-reload-label" title="Auto-reload file on changes">
+          <input type="checkbox" id="autoReload" class="auto-reload-checkbox">
+          Auto-reload
+        </label>
         <button id="open" class="btn">Open…</button>
       </div>
       <div id="path" class="path"></div>
@@ -41,9 +46,11 @@ const statusEl = document.getElementById('status');
 const fontDecEl = document.getElementById('fontDec');
 const fontIncEl = document.getElementById('fontInc');
 const fontValEl = document.getElementById('fontVal');
+const autoReloadEl = document.getElementById('autoReload');
 
 let currentPath = '';
 let fontScale = 100;
+let autoReloadEnabled = false;
 
 function setControlsEnabled(enabled) {
   const disabled = !enabled;
@@ -100,6 +107,15 @@ async function openAndRender() {
     currentPath = res.path;
     pathEl.textContent = currentPath;
     requestAnimationFrame(() => setPreview(res.html));
+
+    // Start watching the file if auto-reload is enabled
+    if (autoReloadEnabled && currentPath) {
+      try {
+        await StartWatchingFile(currentPath);
+      } catch (err) {
+        console.error('Failed to start watching file:', err);
+      }
+    }
   } catch (err) {
     console.error(err);
     setError(err);
@@ -161,6 +177,31 @@ paletteEl.addEventListener('change', async () => {
     console.error(err);
   }
   await rerender();
+});
+
+autoReloadEl.addEventListener('change', async () => {
+  autoReloadEnabled = autoReloadEl.checked;
+
+  if (autoReloadEnabled && currentPath) {
+    // Enable watching
+    try {
+      await StartWatchingFile(currentPath);
+      setStatus('Auto-reload enabled');
+    } catch (err) {
+      console.error('Failed to start watching file:', err);
+      setError('Failed to enable auto-reload: ' + err);
+      autoReloadEl.checked = false;
+      autoReloadEnabled = false;
+    }
+  } else {
+    // Disable watching
+    try {
+      await StopWatchingFile();
+      setStatus('Auto-reload disabled');
+    } catch (err) {
+      console.error('Failed to stop watching file:', err);
+    }
+  }
 });
 
 async function renderInitialArgs() {
@@ -231,3 +272,17 @@ setPreview('');
 updateFontUI();
 setControlsEnabled(false);
 renderInitialArgs();
+
+// Listen for file change events from the backend
+EventsOn('file-changed', async (path) => {
+  if (autoReloadEnabled && path === currentPath) {
+    setStatus('File changed, reloading...');
+    await rerender();
+  }
+});
+
+// Listen for file watch errors
+EventsOn('file-watch-error', (error) => {
+  console.error('File watch error:', error);
+  setError('File watch error: ' + error);
+});

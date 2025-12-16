@@ -95,3 +95,17 @@
 .status[data-level="error"] {
     color: #ff7b72;
 }
+
+.auto-reload-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #c9d1d9;
+    user-select: none;
+}
+
+.auto-reload-checkbox {
+    cursor: pointer;
+}

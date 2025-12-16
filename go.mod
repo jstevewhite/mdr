@@ -3,6 +3,7 @@ module github.com/jstevewhite/mdr
 go 1.24
 
 require (
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/wailsapp/wails/v2 v2.11.0
 	github.com/yuin/goldmark v1.7.4
 )

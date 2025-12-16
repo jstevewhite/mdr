@@ -29,3 +29,7 @@ export function SetFontScale(arg1:number):Promise<void>;
 export function SetPalette(arg1:string):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;
+
+export function StartWatchingFile(arg1:string):Promise<void>;
+
+export function StopWatchingFile():Promise<void>;
