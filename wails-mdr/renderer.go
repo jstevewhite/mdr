@@ -1,0 +1,139 @@
+package main
+
+import (
+	"bytes"
+	"html/template"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
+)
+
+type renderTheme string
+
+const (
+	themeLight renderTheme = "light"
+	themeDark  renderTheme = "dark"
+)
+
+type paletteMode string
+
+const (
+	paletteTheme paletteMode = "theme"
+	paletteLight paletteMode = paletteMode(themeLight)
+	paletteDark  paletteMode = paletteMode(themeDark)
+)
+
+func normalizeTheme(name string) renderTheme {
+	switch renderTheme(name) {
+	case themeDark:
+		return themeDark
+	default:
+		return themeLight
+	}
+}
+
+func themeCSS(t renderTheme) string {
+	switch t {
+	case themeDark:
+		return "html,body{background:#0d1117;color:#c9d1d9}a{color:#58a6ff}pre,code{background:#161b22}blockquote{color:#8b949e;border-left:4px solid #30363d}hr{border:0;border-top:1px solid #30363d}table{border-collapse:collapse}th,td{border:1px solid #30363d;padding:6px 10px}"
+	default:
+		return "html,body{background:#ffffff;color:#1f2328}a{color:#0969da}pre,code{background:#f6f8fa}blockquote{color:#57606a;border-left:4px solid #d0d7de}hr{border:0;border-top:1px solid #d0d7de}table{border-collapse:collapse}th,td{border:1px solid #d0d7de;padding:6px 10px}"
+	}
+}
+
+func normalizePalette(p string) paletteMode {
+	switch paletteMode(strings.TrimSpace(p)) {
+	case paletteTheme:
+		return paletteTheme
+	case paletteDark:
+		return paletteDark
+	default:
+		return paletteLight
+	}
+}
+
+func paletteCSSByMode(p paletteMode) string {
+	switch p {
+	case paletteDark:
+		return themeCSS(themeDark)
+	case paletteTheme:
+		return ""
+	default:
+		return themeCSS(themeLight)
+	}
+}
+
+func themeCSSByName(themeName string) string {
+	themeName = strings.TrimSpace(themeName)
+	if themeName == "" {
+		return ""
+	}
+
+	if themeName == "default" {
+		return ""
+	}
+
+	dir, err := themesDir()
+	if err != nil {
+		return themeCSS(themeLight)
+	}
+
+	name := filepath.Base(themeName)
+	if !strings.HasSuffix(strings.ToLower(name), ".css") {
+		name += ".css"
+	}
+	path := filepath.Join(dir, name)
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func RenderMarkdownToHTMLDocument(markdown string, themeName string, palette string) (string, error) {
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Table,
+			extension.Strikethrough,
+			extension.TaskList,
+			extension.Linkify,
+		),
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
+	)
+
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(markdown), &buf); err != nil {
+		return "", err
+	}
+
+	layoutCSS := themeCSSByName(themeName)
+	pMode := normalizePalette(palette)
+	palCSS := paletteCSSByMode(pMode)
+
+	baseCSS := "body{margin:0}img{max-width:100%}pre{overflow:auto}"
+	if strings.TrimSpace(themeName) == "" || strings.TrimSpace(themeName) == "default" {
+		baseCSS += "#wrapper{padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%}"
+	}
+
+	page := "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>" + baseCSS + layoutCSS + palCSS + "</style></head><body><div id=\"wrapper\">{{.Body}}</div></body></html>"
+
+	tmpl, err := template.New("page").Parse(page)
+	if err != nil {
+		return "", err
+	}
+
+	var out bytes.Buffer
+	if err := tmpl.Execute(&out, map[string]any{"Body": template.HTML(buf.String())}); err != nil {
+		return "", err
+	}
+
+	return out.String(), nil
+}
