@@ -93,6 +93,22 @@ func (a *App) SetAutoReload(enabled bool) error {
 	return setAutoReloadInConfig(enabled)
 }
 
+func (a *App) GetTOCVisible() bool {
+	return getTOCVisibleFromConfig()
+}
+
+func (a *App) SetTOCVisible(visible bool) error {
+	return setTOCVisibleInConfig(visible)
+}
+
+func (a *App) GetTOCPinned() bool {
+	return getTOCPinnedFromConfig()
+}
+
+func (a *App) SetTOCPinned(pinned bool) error {
+	return setTOCPinnedInConfig(pinned)
+}
+
 func (a *App) ListThemes() ([]string, error) {
 	items := []string{"default"}
 

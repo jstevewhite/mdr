@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, StartWatchingFile, StopWatchingFile } from '../wailsjs/go/main/App';
+import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
@@ -152,14 +152,28 @@ function renderTOC(toc) {
   });
 }
 
-function toggleTOC() {
+async function toggleTOC() {
   tocVisible = !tocVisible;
   tocSidebarEl.classList.toggle('visible', tocVisible);
+
+  // Save the TOC visibility state
+  try {
+    await SetTOCVisible(tocVisible);
+  } catch (err) {
+    console.error('Failed to save TOC visibility:', err);
+  }
 }
 
-function togglePin() {
+async function togglePin() {
   tocPinned = !tocPinned;
   tocSidebarEl.classList.toggle('pinned', tocPinned);
+
+  // Save the TOC pinned state
+  try {
+    await SetTOCPinned(tocPinned);
+  } catch (err) {
+    console.error('Failed to save TOC pinned state:', err);
+  }
 
   // Update preview margin
   if (tocPinned) {
@@ -388,6 +402,33 @@ async function renderInitialArgs() {
       const savedAutoReload = await GetAutoReload();
       autoReloadEnabled = savedAutoReload;
       autoReloadEl.checked = savedAutoReload;
+    } catch (err) {
+      console.error(err);
+    }
+
+    try {
+      const savedTOCVisible = await GetTOCVisible();
+      tocVisible = savedTOCVisible;
+      if (savedTOCVisible) {
+        tocSidebarEl.classList.add('visible');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    try {
+      const savedTOCPinned = await GetTOCPinned();
+      tocPinned = savedTOCPinned;
+      if (savedTOCPinned) {
+        tocSidebarEl.classList.add('pinned');
+        previewEl.style.marginLeft = '280px';
+
+        // Update pin button icon for pinned state
+        tocPinEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707l-4.95 4.95a.5.5 0 0 1-.707 0l-4.95-4.95a.5.5 0 0 1 0-.707l4.95-4.95a.5.5 0 0 1 .353-.146z"/>
+        </svg>`;
+        tocPinEl.title = 'Unpin sidebar';
+      }
     } catch (err) {
       console.error(err);
     }

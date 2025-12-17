@@ -9,5 +9,26 @@
   "author": {
     "name": "Steve White",
     "email": "stwhite@mac.com"
+  },
+  "info": {
+    "companyName": "Steve White",
+    "productName": "mdr",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024 Steve White",
+    "comments": "Markdown Viewer",
+    "fileAssociations": [
+      {
+        "ext": "md",
+        "name": "Markdown Document",
+        "role": "Editor",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "markdown",
+        "name": "Markdown Document",
+        "role": "Editor",
+        "iconName": "appicon"
+      }
+    ]
   }
 }

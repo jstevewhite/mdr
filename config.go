@@ -224,3 +224,53 @@ func setAutoReloadInConfig(enabled bool) error {
 
 	return writeConfig(cfg)
 }
+
+func getTOCVisibleFromConfig() bool {
+	cfg, err := readConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["tocVisible"])
+	return v == "true" || v == "1" || v == "yes"
+}
+
+func setTOCVisibleInConfig(visible bool) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if visible {
+		cfg["tocVisible"] = "true"
+	} else {
+		cfg["tocVisible"] = "false"
+	}
+
+	return writeConfig(cfg)
+}
+
+func getTOCPinnedFromConfig() bool {
+	cfg, err := readConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["tocPinned"])
+	return v == "true" || v == "1" || v == "yes"
+}
+
+func setTOCPinnedInConfig(pinned bool) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if pinned {
+		cfg["tocPinned"] = "true"
+	} else {
+		cfg["tocPinned"] = "false"
+	}
+
+	return writeConfig(cfg)
+}
