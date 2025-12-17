@@ -55,11 +55,17 @@ ifeq ($(UNAME_S),Darwin)
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
 	@echo "Linked mdr binary to ~/bin/mdr"
+	@mkdir -p "$$HOME/.config/mdr/mdthemes"
+	@cp -f modman.css nordic.css "$$HOME/.config/mdr/mdthemes/"
+	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
 else ifeq ($(UNAME_S),Linux)
 	@echo "Installing for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
 	@chmod +x /usr/local/bin/mdr
 	@echo "Installed mdr binary to /usr/local/bin/"
+	@mkdir -p "$$HOME/.config/mdr/mdthemes"
+	@cp -f modman.css nordic.css "$$HOME/.config/mdr/mdthemes/"
+	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
 else ifeq ($(UNAME_S),MINGW64_NT)
 	@echo "Installing for Windows..."
 	@echo "Windows installation not yet implemented"
