@@ -52,6 +52,9 @@ ifeq ($(UNAME_S),Darwin)
 	@mkdir -p ~/Applications
 	@cp -r build/bin/mdr.app ~/Applications/
 	@echo "Installed mdr.app to ~/Applications/"
+	@mkdir -p ~/bin
+	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
+	@echo "Linked mdr binary to ~/bin/mdr"
 else ifeq ($(UNAME_S),Linux)
 	@echo "Installing for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
