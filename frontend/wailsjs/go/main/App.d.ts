@@ -10,6 +10,10 @@ export function GetLaunchArgs():Promise<Array<string>>;
 
 export function GetPalette():Promise<string>;
 
+export function GetTOCPinned():Promise<boolean>;
+
+export function GetTOCVisible():Promise<boolean>;
+
 export function GetTheme():Promise<string>;
 
 export function Greet(arg1:string):Promise<string>;
@@ -33,6 +37,10 @@ export function SetAutoReload(arg1:boolean):Promise<void>;
 export function SetFontScale(arg1:number):Promise<void>;
 
 export function SetPalette(arg1:string):Promise<void>;
+
+export function SetTOCPinned(arg1:boolean):Promise<void>;
+
+export function SetTOCVisible(arg1:boolean):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;
 

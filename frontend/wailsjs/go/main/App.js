@@ -18,6 +18,14 @@ export function GetPalette() {
   return window['go']['main']['App']['GetPalette']();
 }
 
+export function GetTOCPinned() {
+  return window['go']['main']['App']['GetTOCPinned']();
+}
+
+export function GetTOCVisible() {
+  return window['go']['main']['App']['GetTOCVisible']();
+}
+
 export function GetTheme() {
   return window['go']['main']['App']['GetTheme']();
 }
@@ -64,6 +72,14 @@ export function SetFontScale(arg1) {
 
 export function SetPalette(arg1) {
   return window['go']['main']['App']['SetPalette'](arg1);
+}
+
+export function SetTOCPinned(arg1) {
+  return window['go']['main']['App']['SetTOCPinned'](arg1);
+}
+
+export function SetTOCVisible(arg1) {
+  return window['go']['main']['App']['SetTOCVisible'](arg1);
 }
 
 export function SetTheme(arg1) {

@@ -44,6 +44,18 @@ Output:
 
 - `build/bin/mdr.app` (and the embedded binary at `build/bin/mdr.app/Contents/MacOS/mdr`)
 
+Install (Makefile):
+
+- `make build`
+- `make install`
+
+This will:
+
+- Copy `build/bin/mdr.app` to `~/Applications/mdr.app`
+- Create/update a symlink at `~/bin/mdr` pointing to `~/Applications/mdr.app/Contents/MacOS/mdr`
+
+If `mdr` is not found after install, ensure `~/bin` is on your `PATH`.
+
 ### Linux (primary)
 
 - **WebView runtime**: Uses WebKitGTK.
