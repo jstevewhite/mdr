@@ -472,6 +472,14 @@ EventsOn('file-changed', async (path) => {
   }
 });
 
+// Listen for theme change events from the backend
+EventsOn('theme-changed', async (themeName) => {
+  if (autoReloadEnabled) {
+    setStatus(`Theme changed (${themeName}), reloading...`);
+    await rerender();
+  }
+});
+
 // Listen for file watch errors
 EventsOn('file-watch-error', (error) => {
   console.error('File watch error:', error);

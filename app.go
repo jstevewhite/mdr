@@ -14,10 +14,12 @@ import (
 
 // App struct
 type App struct {
-	ctx        context.Context
-	launchArgs []string
-	watcher    *fsnotify.Watcher
-	watchedFile string
+	ctx              context.Context
+	launchArgs       []string
+	watcher          *fsnotify.Watcher
+	watchedFile      string
+	watchedThemeFile string
+	watchedThemeName string
 }
 
 // NewApp creates a new App application struct
@@ -66,7 +68,12 @@ func (a *App) GetTheme() string {
 }
 
 func (a *App) SetTheme(theme string) error {
-	return setThemeInConfig(theme)
+	if err := setThemeInConfig(theme); err != nil {
+		return err
+	}
+	// If auto-reload is active, refresh the watched theme file.
+	a.refreshThemeWatch(theme)
+	return nil
 }
 
 func (a *App) GetPalette() string {
@@ -242,6 +249,9 @@ func (a *App) StartWatchingFile(path string) error {
 	a.watcher = watcher
 	a.watchedFile = path
 
+	// Also watch the current theme (if any)
+	a.refreshThemeWatch(getThemeFromConfig())
+
 	// Start goroutine to watch for file changes
 	go func() {
 		for {
@@ -252,8 +262,13 @@ func (a *App) StartWatchingFile(path string) error {
 				}
 				// Handle write and create events (some editors use create instead of write)
 				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-					// Emit event to frontend
-					runtime.EventsEmit(a.ctx, "file-changed", path)
+					changed := filepath.Clean(event.Name)
+					if changed == a.watchedThemeFile && a.watchedThemeName != "" {
+						runtime.EventsEmit(a.ctx, "theme-changed", a.watchedThemeName)
+					} else {
+						// Emit event to frontend
+						runtime.EventsEmit(a.ctx, "file-changed", path)
+					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
@@ -273,7 +288,45 @@ func (a *App) StopWatchingFile() {
 		a.watcher.Close()
 		a.watcher = nil
 		a.watchedFile = ""
+		a.watchedThemeFile = ""
+		a.watchedThemeName = ""
 	}
+}
+
+func (a *App) refreshThemeWatch(themeName string) {
+	if a.watcher == nil {
+		return
+	}
+
+	// Remove any previously watched theme file
+	if a.watchedThemeFile != "" {
+		_ = a.watcher.Remove(a.watchedThemeFile)
+		a.watchedThemeFile = ""
+		a.watchedThemeName = ""
+	}
+
+	themeName = strings.TrimSpace(themeName)
+	if themeName == "" || themeName == "default" {
+		return
+	}
+
+	dir, err := themesDir()
+	if err != nil {
+		return
+	}
+
+	name := filepath.Base(themeName)
+	if !strings.HasSuffix(strings.ToLower(name), ".css") {
+		name += ".css"
+	}
+
+	p := filepath.Clean(filepath.Join(dir, name))
+	if err := a.watcher.Add(p); err != nil {
+		return
+	}
+
+	a.watchedThemeFile = p
+	a.watchedThemeName = strings.TrimSuffix(filepath.Base(name), filepath.Ext(name))
 }
 
 func normalizePath(p string) string {

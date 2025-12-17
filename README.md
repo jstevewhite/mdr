@@ -2,6 +2,10 @@
 
 `mdr` is a cross-platform Markdown viewer built with Wails.
 
+This application is largely the result of working with AI (Gemini, Claude, GPT, Deepseek, and Qwen3-coder) and countless cycles of 'wait, not that'. The architecture is mine, the code is mostly not, though I did have to jump in a few times and fix things. I wanted a simple application for rendering Markdown on my Mac and my Asus Ascent GX10, so those are the platforms it's been tested on. I don't have a Windows box, which is why it isn't tested, but the AIs assure me it should build and work if someone wants to try it. I tried to make it fast and light. 
+
+It reloads in realtime, so editing with sublime text and :w updates the preview. For me it's much more comfortable than the split-pane style that most implement, but since I mostly use vim/Sublime Text with VI keybindings, it works. It's also great for "Let me look at this README.md". 
+
 ## Features
 
 - Open and render local Markdown files
@@ -43,18 +47,6 @@ Build:
 Output:
 
 - `build/bin/mdr.app` (and the embedded binary at `build/bin/mdr.app/Contents/MacOS/mdr`)
-
-Install (Makefile):
-
-- `make build`
-- `make install`
-
-This will:
-
-- Copy `build/bin/mdr.app` to `~/Applications/mdr.app`
-- Create/update a symlink at `~/bin/mdr` pointing to `~/Applications/mdr.app/Contents/MacOS/mdr`
-
-If `mdr` is not found after install, ensure `~/bin` is on your `PATH`.
 
 ### Linux (primary)
 
