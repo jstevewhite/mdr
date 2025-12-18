@@ -122,7 +122,7 @@ function updateFontUI() {
   }
 }
 
-function setPreview(html) {
+function setPreview(html, charCount, wordCount) {
   const doc = html || '<!DOCTYPE html><html><body></body></html>';
 
   previewEl.onload = () => {
@@ -137,7 +137,13 @@ function setPreview(html) {
   };
 
   previewEl.srcdoc = doc;
-  setStatus('info', `Loaded ${doc.length} chars`);
+  
+  // Display character and word count if provided
+  if (charCount !== undefined && wordCount !== undefined) {
+    setStatus('info', `${wordCount.toLocaleString()} words, ${charCount.toLocaleString()} chars`);
+  } else {
+    setStatus('info', `Loaded ${doc.length} chars`);
+  }
 }
 
 function renderTOC(toc) {
@@ -263,7 +269,7 @@ async function openAndRender() {
     currentPath = res.path;
     pathEl.textContent = currentPath;
     requestAnimationFrame(() => {
-      setPreview(res.html);
+      setPreview(res.html, res.charCount, res.wordCount);
       renderTOC(res.toc);
       updateTOCTheme();
     });
@@ -292,7 +298,7 @@ async function rerender() {
     const palette = paletteEl.value;
     const res = await RenderFileWithPaletteAndTOC(currentPath, theme, palette);
     requestAnimationFrame(() => {
-      setPreview(res.html);
+      setPreview(res.html, res.charCount, res.wordCount);
       renderTOC(res.toc);
       updateTOCTheme();
     });

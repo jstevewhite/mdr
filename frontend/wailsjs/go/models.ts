@@ -20,6 +20,8 @@ export namespace main {
 	    path: string;
 	    html: string;
 	    toc: TOCItem[];
+	    charCount: number;
+	    wordCount: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new RenderResult(source);
@@ -30,6 +32,8 @@ export namespace main {
 	        this.path = source["path"];
 	        this.html = source["html"];
 	        this.toc = this.convertValues(source["toc"], TOCItem);
+	        this.charCount = source["charCount"];
+	        this.wordCount = source["wordCount"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

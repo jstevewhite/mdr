@@ -102,9 +102,11 @@ func (a *App) Greet(name string) string {
 }
 
 type RenderResult struct {
-	Path string    `json:"path"`
-	HTML string    `json:"html"`
-	TOC  []TOCItem `json:"toc"`
+	Path      string    `json:"path"`
+	HTML      string    `json:"html"`
+	TOC       []TOCItem `json:"toc"`
+	CharCount int       `json:"charCount"`
+	WordCount int       `json:"wordCount"`
 }
 
 type StatusMessage struct {
@@ -237,6 +239,16 @@ func (a *App) RenderFileWithPalette(path string, theme string, palette string) (
 	return RenderMarkdownToHTMLDocument(string(data), theme, palette, getFontScaleFromConfig())
 }
 
+// countWords counts the number of words in a string
+func countWords(s string) int {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+	words := strings.Fields(s)
+	return len(words)
+}
+
 // RenderFileWithPaletteAndTOC renders a file and returns HTML with TOC
 func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette string) (RenderResult, error) {
 	path = normalizePath(path)
@@ -248,15 +260,18 @@ func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette str
 		return RenderResult{}, err
 	}
 
-	output, err := RenderMarkdownWithTOC(string(data), theme, palette, getFontScaleFromConfig())
+	markdown := string(data)
+	output, err := RenderMarkdownWithTOC(markdown, theme, palette, getFontScaleFromConfig())
 	if err != nil {
 		return RenderResult{}, err
 	}
 
 	return RenderResult{
-		Path: path,
-		HTML: output.HTML,
-		TOC:  output.TOC,
+		Path:      path,
+		HTML:      output.HTML,
+		TOC:       output.TOC,
+		CharCount: len(markdown),
+		WordCount: countWords(markdown),
 	}, nil
 }
 
