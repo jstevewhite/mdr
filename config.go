@@ -274,3 +274,24 @@ func setTOCPinnedInConfig(pinned bool) error {
 
 	return writeConfig(cfg)
 }
+
+func getMaxFileBytesFromConfig() int64 {
+	cfg, err := readConfig()
+	if err != nil {
+		return 5 * 1024 * 1024
+	}
+
+	v := strings.TrimSpace(cfg["maxFileSizeMB"])
+	if v == "" {
+		return 5 * 1024 * 1024
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 {
+		return 5 * 1024 * 1024
+	}
+	// Cap to 100 MB to avoid accidental huge loads.
+	if n > 100 {
+		n = 100
+	}
+	return int64(n) * 1024 * 1024
+}

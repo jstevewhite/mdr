@@ -68,6 +68,12 @@ const tocSidebarEl = document.getElementById('tocSidebar');
 const tocNavEl = document.getElementById('tocNav');
 const tocPinEl = document.getElementById('tocPin');
 
+if (previewEl) {
+  previewEl.setAttribute('sandbox', 'allow-same-origin');
+  previewEl.setAttribute('referrerpolicy', 'no-referrer');
+  previewEl.setAttribute('allow', '');
+}
+
 let currentPath = '';
 let fontScale = 100;
 let autoReloadEnabled = false;

@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -122,9 +123,29 @@ type RenderOutput struct {
 	TOC  []TOCItem
 }
 
+func allowUnsafeHTML() bool {
+	env := strings.ToLower(strings.TrimSpace(os.Getenv("MDR_UNSAFE_HTML")))
+	return env == "1" || env == "true" || env == "yes"
+}
+
+func sanitizer() *bluemonday.Policy {
+	p := bluemonday.UGCPolicy()
+	p.AllowAttrs("id").Globally()
+	p.AllowAttrs("class").Globally()
+	return p
+}
+
+func applyCSP(page string) (string, error) {
+	csp := "default-src 'none'; style-src 'self' 'unsafe-inline' data:; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; media-src 'self' data:; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+	tag := fmt.Sprintf(`<meta http-equiv="Content-Security-Policy" content="%s">`, template.HTMLEscapeString(csp))
+	page = strings.Replace(page, "<head>", "<head>"+tag, 1)
+	return page, nil
+}
+
 // extractTOC walks the AST and extracts heading information
 func extractTOC(source []byte, node ast.Node) []TOCItem {
 	var items []TOCItem
+	seen := make(map[string]int)
 	ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -144,6 +165,10 @@ func extractTOC(source []byte, node ast.Node) []TOCItem {
 			text := textBuf.String()
 			if text != "" {
 				id := generateID(text)
+				if count := seen[id]; count > 0 {
+					id = fmt.Sprintf("%s-%d", id, count+1)
+				}
+				seen[id]++
 				// Set ID attribute on the heading
 				heading.SetAttributeString("id", []byte(id))
 
@@ -203,6 +228,9 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 	baseCSS := fmt.Sprintf("body{margin:0}img{max-width:100%%}pre{overflow:auto}#wrapper{font-size:%d%% !important;padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%%}", fontScale)
 
 	page := fmt.Sprintf("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>%s%s%s</style></head><body class=\"palette-%s\"><div id=\"wrapper\">{{.Body}}</div></body></html>", baseCSS, layoutCSS, palCSS, pMode)
+	if updated, err := applyCSP(page); err == nil {
+		page = updated
+	}
 
 	tmpl, err := template.New("page").Parse(page)
 	if err != nil {
@@ -214,8 +242,15 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 		return RenderOutput{}, err
 	}
 
+	// Sanitize rendered HTML unless explicitly opted out.
+	htmlOut := out.String()
+	if !allowUnsafeHTML() {
+		p := sanitizer()
+		htmlOut = p.Sanitize(htmlOut)
+	}
+
 	return RenderOutput{
-		HTML: out.String(),
+		HTML: htmlOut,
 		TOC:  toc,
 	}, nil
 }

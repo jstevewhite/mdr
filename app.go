@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -205,6 +206,9 @@ func (a *App) RenderFile(path string, theme string) (string, error) {
 
 func (a *App) RenderFileWithPalette(path string, theme string, palette string) (string, error) {
 	path = normalizePath(path)
+	if err := enforceFileLimit(path); err != nil {
+		return "", err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -215,6 +219,9 @@ func (a *App) RenderFileWithPalette(path string, theme string, palette string) (
 // RenderFileWithPaletteAndTOC renders a file and returns HTML with TOC
 func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette string) (RenderResult, error) {
 	path = normalizePath(path)
+	if err := enforceFileLimit(path); err != nil {
+		return RenderResult{}, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return RenderResult{}, err
@@ -273,13 +280,17 @@ func (a *App) StartWatchingFile(path string) error {
 		return fmt.Errorf("invalid file path")
 	}
 
+	if _, err := os.Stat(path); err != nil {
+		return err
+	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 
-	err = watcher.Add(path)
-	if err != nil {
+	dir := filepath.Dir(path)
+	if err := watcher.Add(dir); err != nil {
 		watcher.Close()
 		return err
 	}
@@ -291,31 +302,7 @@ func (a *App) StartWatchingFile(path string) error {
 	a.refreshThemeWatch(getThemeFromConfig())
 
 	// Start goroutine to watch for file changes
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				// Handle write and create events (some editors use create instead of write)
-				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-					changed := filepath.Clean(event.Name)
-					if changed == a.watchedThemeFile && a.watchedThemeName != "" {
-						runtime.EventsEmit(a.ctx, "theme-changed", a.watchedThemeName)
-					} else {
-						// Emit event to frontend
-						runtime.EventsEmit(a.ctx, "file-changed", path)
-					}
-				}
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				runtime.EventsEmit(a.ctx, "file-watch-error", err.Error())
-			}
-		}
-	}()
+	go a.watchLoop(watcher, path)
 
 	return nil
 }
@@ -329,6 +316,55 @@ func (a *App) StopWatchingFile() {
 		a.watchedThemeFile = ""
 		a.watchedThemeName = ""
 	}
+}
+
+func (a *App) watchLoop(watcher *fsnotify.Watcher, target string) {
+	target = filepath.Clean(target)
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
+			changed := filepath.Clean(event.Name)
+			if changed == "" {
+				continue
+			}
+
+			// Theme file changes
+			if changed == a.watchedThemeFile && a.watchedThemeName != "" && (event.Op&(fsnotify.Write|fsnotify.Create) != 0) {
+				runtime.EventsEmit(a.ctx, "theme-changed", a.watchedThemeName)
+				continue
+			}
+
+			if changed != target {
+				continue
+			}
+
+			switch {
+			case event.Op&(fsnotify.Write|fsnotify.Create) != 0:
+				runtime.EventsEmit(a.ctx, "file-changed", target)
+			case event.Op&(fsnotify.Remove|fsnotify.Rename) != 0:
+				go a.waitForReappear(target)
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			runtime.EventsEmit(a.ctx, "file-watch-error", err.Error())
+		}
+	}
+}
+
+func (a *App) waitForReappear(path string) {
+	for i := 0; i < 10; i++ {
+		time.Sleep(200 * time.Millisecond)
+		if _, err := os.Stat(path); err == nil {
+			runtime.EventsEmit(a.ctx, "file-changed", path)
+			return
+		}
+	}
+	runtime.EventsEmit(a.ctx, "file-watch-error", fmt.Sprintf("file missing: %s", path))
 }
 
 func (a *App) refreshThemeWatch(themeName string) {
@@ -365,6 +401,18 @@ func (a *App) refreshThemeWatch(themeName string) {
 
 	a.watchedThemeFile = p
 	a.watchedThemeName = strings.TrimSuffix(filepath.Base(name), filepath.Ext(name))
+}
+
+func enforceFileLimit(path string) error {
+	limit := getMaxFileBytesFromConfig()
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if info.Size() > limit {
+		return fmt.Errorf("file too large: %d bytes (limit %d)", info.Size(), limit)
+	}
+	return nil
 }
 
 func normalizePath(p string) string {

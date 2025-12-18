@@ -9,6 +9,8 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 ## Features
 
 - Open and render local Markdown files
+- Table of Contents sidebar with pin/toggle
+- Auto-reload for files and custom themes (works with atomic-save editors)
 - Layout themes via user CSS files in `~/.config/mdr/mdthemes/`
 - Palette override: `light` / `dark` / `theme`
 - Font size controls with persistence
@@ -16,6 +18,16 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 Settings are stored in:
 
 - `~/.config/mdr/mdr.conf`
+- `maxFileSizeMB` (default 5) guards against loading huge files.
+
+Other settings:
+
+- `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
+
+Security notes:
+
+- Markdown is sanitized before rendering; the preview iframe is sandboxed with a strict CSP.  
+- To deliberately allow raw, unsafe HTML (not recommended), set `MDR_UNSAFE_HTML=true` before launching.
 
 ## Development
 
