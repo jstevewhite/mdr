@@ -132,6 +132,7 @@ func sanitizer() *bluemonday.Policy {
 	p := bluemonday.UGCPolicy()
 	p.AllowAttrs("id").Globally()
 	p.AllowAttrs("class").Globally()
+	p.AllowStyling()
 	return p
 }
 
@@ -238,19 +239,17 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 	}
 
 	var out bytes.Buffer
-	if err := tmpl.Execute(&out, map[string]any{"Body": template.HTML(buf.String())}); err != nil {
+	bodyHTML := buf.String()
+	if !allowUnsafeHTML() {
+		bodyHTML = sanitizer().Sanitize(bodyHTML)
+	}
+
+	if err := tmpl.Execute(&out, map[string]any{"Body": template.HTML(bodyHTML)}); err != nil {
 		return RenderOutput{}, err
 	}
 
-	// Sanitize rendered HTML unless explicitly opted out.
-	htmlOut := out.String()
-	if !allowUnsafeHTML() {
-		p := sanitizer()
-		htmlOut = p.Sanitize(htmlOut)
-	}
-
 	return RenderOutput{
-		HTML: htmlOut,
+		HTML: out.String(),
 		TOC:  toc,
 	}, nil
 }
