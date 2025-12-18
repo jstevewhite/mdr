@@ -93,20 +93,6 @@
     transition: margin-left 0.3s ease;
 }
 
-.status {
-    position: absolute;
-    bottom: 10px;
-    left: 12px;
-    right: 12px;
-    color: #8b949e;
-    font-size: 12px;
-    pointer-events: none;
-}
-
-.status[data-level="error"] {
-    color: #ff7b72;
-}
-
 .auto-reload-label {
     display: flex;
     align-items: center;
@@ -295,4 +281,22 @@
 
 .toc-sidebar.dark-theme .toc-empty {
     color: #6e7681;
+}
+
+.status-bar {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-top: 1px solid #30363d;
+    background: #0b0f16;
+}
+
+.status {
+    color: #8b949e;
+    font-size: 12px;
+}
+
+.status-bar[data-level="error"] .status {
+    color: #ff7b72;
 }

@@ -81,6 +81,21 @@ func (a *App) handleFileOpen(filePaths []string) {
 	runtime.EventsEmit(ctx, "file-open", normalized)
 }
 
+func (a *App) emitStatus(level, code, message string) {
+	if a.ctx == nil {
+		return
+	}
+	level = strings.TrimSpace(level)
+	if level == "" {
+		level = "info"
+	}
+	runtime.EventsEmit(a.ctx, "status", StatusMessage{
+		Level:   level,
+		Code:    code,
+		Message: message,
+	})
+}
+
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
@@ -90,6 +105,12 @@ type RenderResult struct {
 	Path string    `json:"path"`
 	HTML string    `json:"html"`
 	TOC  []TOCItem `json:"toc"`
+}
+
+type StatusMessage struct {
+	Level   string `json:"level"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 func (a *App) RenderMarkdown(markdown string, theme string) (string, error) {
@@ -351,7 +372,7 @@ func (a *App) watchLoop(watcher *fsnotify.Watcher, target string) {
 			if !ok {
 				return
 			}
-			runtime.EventsEmit(a.ctx, "file-watch-error", err.Error())
+			a.emitStatus("error", "file-watch-error", err.Error())
 		}
 	}
 }
@@ -364,7 +385,7 @@ func (a *App) waitForReappear(path string) {
 			return
 		}
 	}
-	runtime.EventsEmit(a.ctx, "file-watch-error", fmt.Sprintf("file missing: %s", path))
+	a.emitStatus("error", "file-missing", fmt.Sprintf("file missing: %s", path))
 }
 
 func (a *App) refreshThemeWatch(themeName string) {

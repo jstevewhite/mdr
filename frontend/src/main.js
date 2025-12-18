@@ -48,8 +48,10 @@ document.querySelector('#app').innerHTML = `
         <nav id="tocNav" class="toc-nav"></nav>
       </aside>
       <iframe id="preview" class="preview"></iframe>
-      <div id="status" class="status"></div>
     </main>
+    <footer class="status-bar">
+      <div id="status" class="status">Ready</div>
+    </footer>
   </div>
 `;
 
@@ -67,6 +69,8 @@ const tocToggleEl = document.getElementById('tocToggle');
 const tocSidebarEl = document.getElementById('tocSidebar');
 const tocNavEl = document.getElementById('tocNav');
 const tocPinEl = document.getElementById('tocPin');
+const statusBarEl = document.querySelector('.status-bar');
+const statusTextEl = document.getElementById('status');
 
 if (previewEl) {
   previewEl.setAttribute('sandbox', 'allow-same-origin');
@@ -90,20 +94,32 @@ function setControlsEnabled(enabled) {
   if (openEl) openEl.disabled = disabled;
 }
 
+function setStatus(level, msg) {
+  const levelVal = level || 'info';
+  const message = msg || '';
+  if (statusBarEl) {
+    statusBarEl.dataset.level = levelVal;
+  }
+  if (statusTextEl) {
+    statusTextEl.textContent = message;
+  }
+}
+
+function formatError(err) {
+  if (!err) return 'Unknown error';
+  if (typeof err === 'string') return err;
+  if (err.message) return err.message;
+  try {
+    return JSON.stringify(err);
+  } catch (_) {
+    return String(err);
+  }
+}
+
 function updateFontUI() {
   if (fontValEl) {
     fontValEl.textContent = `${fontScale}%`;
   }
-}
-
-function setStatus(msg) {
-  statusEl.dataset.level = 'info';
-  statusEl.textContent = msg || '';
-}
-
-function setError(err) {
-  statusEl.dataset.level = 'error';
-  statusEl.textContent = err ? String(err) : '';
 }
 
 function setPreview(html) {
@@ -121,7 +137,7 @@ function setPreview(html) {
   };
 
   previewEl.srcdoc = doc;
-  setStatus(`Loaded ${doc.length} chars`);
+  setStatus('info', `Loaded ${doc.length} chars`);
 }
 
 function renderTOC(toc) {
@@ -226,7 +242,7 @@ function updateTOCTheme() {
 }
 
 async function openAndRender() {
-  setStatus('');
+  setStatus('info', '');
   try {
     const theme = themeEl.value;
     const palette = paletteEl.value;
@@ -252,7 +268,7 @@ async function openAndRender() {
     }
   } catch (err) {
     console.error(err);
-    setError(err);
+    setStatus('error', formatError(err));
   }
 }
 
@@ -260,7 +276,7 @@ async function rerender() {
   if (!currentPath) {
     return;
   }
-  setStatus('');
+  setStatus('info', '');
   try {
     const theme = themeEl.value;
     const palette = paletteEl.value;
@@ -272,7 +288,7 @@ async function rerender() {
     });
   } catch (err) {
     console.error(err);
-    setError(err);
+    setStatus('error', formatError(err));
   }
 }
 
@@ -495,7 +511,7 @@ EventsOn('file-open', async (paths) => {
 // Listen for file change events from the backend
 EventsOn('file-changed', async (path) => {
   if (autoReloadEnabled && path === currentPath) {
-    setStatus('File changed, reloading...');
+    setStatus('info', 'File changed, reloading...');
     await rerender();
   }
 });
@@ -503,7 +519,7 @@ EventsOn('file-changed', async (path) => {
 // Listen for theme change events from the backend
 EventsOn('theme-changed', async (themeName) => {
   if (autoReloadEnabled) {
-    setStatus(`Theme changed (${themeName}), reloading...`);
+    setStatus('info', `Theme changed (${themeName}), reloading...`);
     await rerender();
   }
 });
@@ -511,5 +527,17 @@ EventsOn('theme-changed', async (themeName) => {
 // Listen for file watch errors
 EventsOn('file-watch-error', (error) => {
   console.error('File watch error:', error);
-  setError('File watch error: ' + error);
+  setStatus('error', 'File watch error: ' + formatError(error));
+});
+
+// Standardized status messages from backend
+EventsOn('status', (payload) => {
+  if (!payload) return;
+  if (typeof payload === 'string') {
+    setStatus('info', payload);
+    return;
+  }
+  const level = payload.level || 'info';
+  const msg = payload.message || '';
+  setStatus(level, msg);
 });

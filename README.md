@@ -14,6 +14,7 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 - Layout themes via user CSS files in `~/.config/mdr/mdthemes/`
 - Palette override: `light` / `dark` / `theme`
 - Font size controls with persistence
+- Status bar for standardized info/errors
 
 Settings are stored in:
 
