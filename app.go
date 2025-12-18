@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -14,8 +15,10 @@ import (
 
 // App struct
 type App struct {
+	mu               sync.Mutex
 	ctx              context.Context
 	launchArgs       []string
+	pendingFileOpens []string
 	watcher          *fsnotify.Watcher
 	watchedFile      string
 	watchedThemeFile string
@@ -30,7 +33,11 @@ func NewApp() *App {
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
+	a.mu.Lock()
 	a.ctx = ctx
+	pending := append([]string(nil), a.pendingFileOpens...)
+	a.pendingFileOpens = nil
+	a.mu.Unlock()
 	var args []string
 	for _, raw := range os.Args[1:] {
 		if strings.HasPrefix(raw, "-psn_") {
@@ -41,7 +48,36 @@ func (a *App) startup(ctx context.Context) {
 			args = append(args, p)
 		}
 	}
+	args = append(args, pending...)
+	a.mu.Lock()
 	a.launchArgs = args
+	a.mu.Unlock()
+}
+
+func (a *App) handleFileOpen(filePaths []string) {
+	var normalized []string
+	for _, p := range filePaths {
+		np := normalizePath(p)
+		if np == "" {
+			continue
+		}
+		normalized = append(normalized, np)
+	}
+	if len(normalized) == 0 {
+		return
+	}
+
+	a.mu.Lock()
+	a.launchArgs = append(a.launchArgs, normalized...)
+	ctx := a.ctx
+	if ctx == nil {
+		a.pendingFileOpens = append(a.pendingFileOpens, normalized...)
+		a.mu.Unlock()
+		return
+	}
+	a.mu.Unlock()
+
+	runtime.EventsEmit(ctx, "file-open", normalized)
 }
 
 // Greet returns a greeting for the given name
@@ -222,7 +258,9 @@ func (a *App) OpenAndRender(theme string, palette string) (RenderResult, error) 
 }
 
 func (a *App) GetLaunchArgs() []string {
-	return a.launchArgs
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return append([]string(nil), a.launchArgs...)
 }
 
 // StartWatchingFile starts watching the specified file for changes

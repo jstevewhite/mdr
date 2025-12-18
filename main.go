@@ -35,6 +35,9 @@ func main() {
 				Title:   "mdr",
 				Message: "A cross-platform Markdown viewer",
 			},
+			OnFileOpen: func(filePath string) {
+				app.handleFileOpen([]string{filePath})
+			},
 		},
 	})
 

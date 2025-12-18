@@ -464,6 +464,28 @@ updateFontUI();
 setControlsEnabled(false);
 renderInitialArgs();
 
+EventsOn('file-open', async (paths) => {
+  try {
+    const p = Array.isArray(paths) ? paths[0] : paths;
+    if (!p) {
+      return;
+    }
+    currentPath = p;
+    pathEl.textContent = currentPath;
+    await rerender();
+
+    if (autoReloadEnabled && currentPath) {
+      try {
+        await StartWatchingFile(currentPath);
+      } catch (err) {
+        console.error('Failed to start watching file:', err);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 // Listen for file change events from the backend
 EventsOn('file-changed', async (path) => {
   if (autoReloadEnabled && path === currentPath) {
