@@ -15,6 +15,7 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 - Palette override: `light` / `dark` / `theme`
 - Font size controls with persistence
 - Status bar for standardized info/errors
+- **Keyboard shortcuts** for common operations
 
 Settings are stored in:
 
@@ -24,6 +25,26 @@ Settings are stored in:
 Other settings:
 
 - `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
+
+## Keyboard Shortcuts
+
+### File Operations
+- **Open File**: `Ctrl+O` (Windows/Linux) / `Cmd+O` (Mac)
+- **Reload File**: `Ctrl+R` (Windows/Linux) / `Cmd+R` (Mac)
+
+### View Controls
+- **Toggle TOC**: `Ctrl+T` (Windows/Linux) / `Cmd+T` (Mac)
+- **Pin/Unpin TOC**: `Ctrl+P` (Windows/Linux) / `Cmd+P` (Mac)
+- **Reset Font Size**: `Ctrl+0` (Windows/Linux) / `Cmd+0` (Mac)
+- **Increase Font Size**: `Ctrl+` (Windows/Linux) / `Cmd+` (Mac)
+- **Decrease Font Size**: `Ctrl-` (Windows/Linux) / `Cmd-` (Mac)
+
+### Theme Controls
+- **Cycle Palette**: `Ctrl+Shift+L` (Windows/Linux) / `Cmd+Shift+L` (Mac)
+- **Cycle Theme**: `Ctrl+Shift+T` (Windows/Linux) / `Cmd+Shift+T` (Mac)
+
+### Navigation
+- **Close TOC**: `Esc` (when TOC is open)
 
 Security notes:
 

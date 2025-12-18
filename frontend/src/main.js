@@ -72,6 +72,10 @@ const tocPinEl = document.getElementById('tocPin');
 const statusBarEl = document.querySelector('.status-bar');
 const statusTextEl = document.getElementById('status');
 
+// Keyboard shortcuts setup
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+const modifierKey = isMac ? 'metaKey' : 'ctrlKey';
+
 if (previewEl) {
   previewEl.setAttribute('sandbox', 'allow-same-origin');
   previewEl.setAttribute('referrerpolicy', 'no-referrer');
@@ -502,6 +506,121 @@ setPreview('');
 updateFontUI();
 setControlsEnabled(false);
 renderInitialArgs();
+
+// Add keyboard shortcuts event listener
+document.addEventListener('keydown', handleKeyboardShortcuts);
+
+// Helper functions for keyboard shortcuts
+async function cyclePalette() {
+    const options = ['light', 'dark', 'theme'];
+    const currentIndex = options.indexOf(paletteEl.value);
+    const nextIndex = (currentIndex + 1) % options.length;
+    const nextPalette = options[nextIndex];
+
+    paletteEl.value = nextPalette;
+    try {
+        await SetPalette(nextPalette);
+        updateTOCTheme();
+        await rerender();
+        setStatus('info', `Palette: ${nextPalette} (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+Shift+L)`);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function cycleTheme() {
+    const themes = await ListThemes();
+    if (!themes || themes.length === 0) return;
+
+    const currentIndex = themes.indexOf(themeEl.value);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    const nextTheme = themes[nextIndex];
+
+    themeEl.value = nextTheme;
+    try {
+        await SetTheme(nextTheme);
+        await rerender();
+        setStatus('info', `Theme: ${nextTheme} (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+Shift+T)`);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function handleKeyboardShortcuts(e) {
+    // Check if we're focused on an input element (let browser handle those)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        return;
+    }
+
+    // File operations
+    if (e.key === 'o' && e[modifierKey]) {
+        e.preventDefault();
+        openAndRender();
+        setStatus('info', `Opened file (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+O)`);
+    }
+    else if (e.key === 'r' && e[modifierKey]) {
+        e.preventDefault();
+        rerender();
+        setStatus('info', `Reloaded file (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+R)`);
+    }
+
+    // View controls
+    else if (e.key === 't' && e[modifierKey] && !e.shiftKey) {
+        e.preventDefault();
+        toggleTOC();
+        setStatus('info', `TOC ${tocVisible ? 'shown' : 'hidden'} (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+T)`);
+    }
+    else if (e.key === 'p' && e[modifierKey]) {
+        e.preventDefault();
+        togglePin();
+        setStatus('info', `TOC ${tocPinned ? 'pinned' : 'unpinned'} (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+P)`);
+    }
+
+    // Font size controls
+    else if (e.key === '0' && e[modifierKey]) {
+        e.preventDefault();
+        fontScale = 100;
+        updateFontUI();
+        SetFontScale(fontScale);
+        rerender();
+        setStatus('info', `Reset font size (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+0)`);
+    }
+    else if ((e.key === '=' || e.key === '+') && e[modifierKey]) {
+        e.preventDefault();
+        fontScale = Math.min(200, fontScale + 10);
+        updateFontUI();
+        SetFontScale(fontScale);
+        rerender();
+        setStatus('info', `Increased font size (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+)`);
+    }
+    else if (e.key === '-' && e[modifierKey]) {
+        e.preventDefault();
+        fontScale = Math.max(50, fontScale - 10);
+        updateFontUI();
+        SetFontScale(fontScale);
+        rerender();
+        setStatus('info', `Decreased font size (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}-)`);
+    }
+
+    // Theme cycling
+    else if (e.key === 'l' && e[modifierKey] && e.shiftKey) {
+        e.preventDefault();
+        cyclePalette();
+    }
+    else if (e.key === 't' && e[modifierKey] && e.shiftKey) {
+        e.preventDefault();
+        cycleTheme();
+    }
+
+    // Close TOC with Escape
+    else if (e.key === 'Escape' && tocVisible) {
+        e.preventDefault();
+        if (tocVisible) {
+            toggleTOC();
+            setStatus('info', 'Closed TOC (Esc)');
+        }
+    }
+}
 
 EventsOn('file-open', async (paths) => {
   try {
