@@ -200,8 +200,10 @@ async function togglePin() {
   // Update preview margin
   if (tocPinned) {
     previewEl.style.marginLeft = '280px';
+    if (statusBarEl) statusBarEl.style.marginLeft = '280px';
   } else {
     previewEl.style.marginLeft = '0';
+    if (statusBarEl) statusBarEl.style.marginLeft = '0';
   }
 
   // Update pin button icon
@@ -225,18 +227,26 @@ function updateTOCTheme() {
   if (palette === 'dark') {
     tocSidebarEl.classList.add('dark-theme');
     tocSidebarEl.classList.remove('light-theme');
+    statusBarEl?.classList.add('dark-theme');
+    statusBarEl?.classList.remove('light-theme');
   } else if (palette === 'light') {
     tocSidebarEl.classList.add('light-theme');
     tocSidebarEl.classList.remove('dark-theme');
+    statusBarEl?.classList.add('light-theme');
+    statusBarEl?.classList.remove('dark-theme');
   } else {
     // 'theme' - use system preference
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (prefersDark) {
       tocSidebarEl.classList.add('dark-theme');
       tocSidebarEl.classList.remove('light-theme');
+      statusBarEl?.classList.add('dark-theme');
+      statusBarEl?.classList.remove('light-theme');
     } else {
       tocSidebarEl.classList.add('light-theme');
       tocSidebarEl.classList.remove('dark-theme');
+      statusBarEl?.classList.add('light-theme');
+      statusBarEl?.classList.remove('dark-theme');
     }
   }
 }
@@ -444,6 +454,7 @@ async function renderInitialArgs() {
       if (savedTOCPinned) {
         tocSidebarEl.classList.add('pinned');
         previewEl.style.marginLeft = '280px';
+        if (statusBarEl) statusBarEl.style.marginLeft = '280px';
 
         // Update pin button icon for pinned state
         tocPinEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">

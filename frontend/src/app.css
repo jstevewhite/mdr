@@ -292,9 +292,23 @@
     background: #0b0f16;
 }
 
+.status-bar.light-theme {
+    background: #f6f8fa;
+    border-top-color: #d0d7de;
+}
+
+.status-bar.dark-theme {
+    background: #0b0f16;
+    border-top-color: #30363d;
+}
+
 .status {
     color: #8b949e;
     font-size: 12px;
+}
+
+.status-bar.light-theme .status {
+    color: #57606a;
 }
 
 .status-bar[data-level="error"] .status {
