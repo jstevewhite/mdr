@@ -3,7 +3,7 @@ WAILS=$(shell go env GOPATH)/bin/wails
 # Detect the operating system
 UNAME_S := $(shell uname -s)
 
-.PHONY: build run dev clean install
+.PHONY: build run dev clean install install_themes
 
 # Universal build target - automatically detects OS
 build:
@@ -46,6 +46,7 @@ else ifeq ($(UNAME_S),MINGW64_NT)
 endif
 
 # Install the application based on OS
+# Install the application based on OS
 install:
 ifeq ($(UNAME_S),Darwin)
 	@echo "Installing for macOS..."
@@ -55,17 +56,13 @@ ifeq ($(UNAME_S),Darwin)
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
 	@echo "Linked mdr binary to ~/bin/mdr"
-	@mkdir -p "$$HOME/.config/mdr/mdthemes"
-	@cp -f modman.css nordic.css "$$HOME/.config/mdr/mdthemes/"
-	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
+	$(MAKE) install_themes
 else ifeq ($(UNAME_S),Linux)
 	@echo "Installing for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
 	@chmod +x /usr/local/bin/mdr
 	@echo "Installed mdr binary to /usr/local/bin/"
-	@mkdir -p "$$HOME/.config/mdr/mdthemes"
-	@cp -f modman.css nordic.css "$$HOME/.config/mdr/mdthemes/"
-	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
+	@echo "Note: Run 'make install_themes' as your normal user to install themes."
 else ifeq ($(UNAME_S),MINGW64_NT)
 	@echo "Installing for Windows..."
 	@echo "Windows installation not yet implemented"
@@ -73,6 +70,12 @@ else
 	@echo "Unsupported platform for installation: $(UNAME_S)"
 	@exit 1
 endif
+
+# Install themes to user config directory
+install_themes:
+	@mkdir -p "$$HOME/.config/mdr/mdthemes"
+	@cp -f modman.css nordic.css "$$HOME/.config/mdr/mdthemes/"
+	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
 
 # Clean build artifacts
 clean:

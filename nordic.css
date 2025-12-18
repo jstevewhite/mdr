@@ -23,12 +23,14 @@ Description: A cool-toned, readable theme optimized for technical documentation.
 }
 
 /* --- DARK MODE OVERRIDES --- */
-body.inverted {
-  --bg-color: #242933; /* Darker grey-blue */
-  --text-color: #ECEFF4;
+body.inverted,
+body.palette-dark {
+  --bg-color: #242933;
+  /* Darker grey-blue */
+  --text-color: #adaeaf;
   --accent-color: #88C0D0;
   --link-color: #BF616A;
-  --code-bg: #445e929c;
+  --code-bg: #544c68;
   --border-color: #434C5E;
   --quote-bg: #2E3440;
 }
@@ -49,7 +51,12 @@ body {
 }
 
 /* --- TYPOGRAPHY --- */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Inter', sans-serif;
   font-weight: 700;
   color: var(--accent-color);
@@ -58,10 +65,23 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
-h1 { font-size: 2.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
-h2 { font-size: 2rem; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.25rem; }
+h1 {
+  font-size: 2.5rem;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
 
 p {
   margin: 0 0 1.5em;
@@ -73,12 +93,16 @@ a {
   font-weight: 600;
   border-bottom: 1px dotted var(--link-color);
 }
+
 a:hover {
   border-bottom: 1px solid var(--link-color);
 }
 
 /* --- CODE & PRE --- */
-code, kbd, pre, samp {
+code,
+kbd,
+pre,
+samp {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.9em;
 }
@@ -113,7 +137,7 @@ blockquote {
   background: var(--quote-bg);
   border-left: 6px solid var(--accent-color);
   border-radius: 0 8px 8px 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 blockquote p:last-child {
@@ -141,10 +165,12 @@ td {
 }
 
 tr:nth-child(even) {
-  background-color: rgba(0,0,0,0.02);
+  background-color: rgba(0, 0, 0, 0.02);
 }
-body.inverted tr:nth-child(even) {
-  background-color: rgba(255,255,255,0.03);
+
+body.inverted tr:nth-child(even),
+body.palette-dark tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.03);
 }
 
 /* --- IMAGES & HR --- */
@@ -168,14 +194,18 @@ hr {
     color: black !important;
     font-size: 12pt;
   }
-  pre, code {
+
+  pre,
+  code {
     border: 1px solid #999;
     page-break-inside: avoid;
   }
+
   a {
     text-decoration: underline;
     color: #000;
   }
+
   #wrapper {
     padding: 0;
     margin: 0;

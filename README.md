@@ -23,7 +23,33 @@ Settings are stored in:
 
 ## Building
 
-- `wails build`
+- `make build`
+
+## Installation
+
+### MacOS
+
+Run `make install` to build and install the application.
+- App installed to: `~/Applications/mdr.app`
+- Themes installed to: `~/.config/mdr/mdthemes/`
+
+### Linux
+
+1. Build the application:
+   ```bash
+   make build
+   ```
+2. Install the binary (requires sudo):
+   ```bash
+   sudo make install
+   ```
+   *Installs `mdr` to `/usr/local/bin/`*
+
+3. Install default themes (as normal user):
+   ```bash
+   make install_themes
+   ```
+   *Installs themes to `~/.config/mdr/mdthemes/`*
 
 ## Building & Packaging Notes
 

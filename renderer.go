@@ -202,7 +202,7 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 
 	baseCSS := fmt.Sprintf("body{margin:0}img{max-width:100%%}pre{overflow:auto}#wrapper{font-size:%d%% !important;padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%%}", fontScale)
 
-	page := "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>" + baseCSS + layoutCSS + palCSS + "</style></head><body><div id=\"wrapper\">{{.Body}}</div></body></html>"
+	page := fmt.Sprintf("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>%s%s%s</style></head><body class=\"palette-%s\"><div id=\"wrapper\">{{.Body}}</div></body></html>", baseCSS, layoutCSS, palCSS, pMode)
 
 	tmpl, err := template.New("page").Parse(page)
 	if err != nil {
