@@ -82,14 +82,20 @@ func (a *App) handleFileOpen(filePaths []string) {
 }
 
 func (a *App) emitStatus(level, code, message string) {
-	if a.ctx == nil {
+	// FIX: Read ctx with mutex protection
+	a.mu.Lock()
+	ctx := a.ctx
+	a.mu.Unlock()
+	
+	if ctx == nil {
 		return
 	}
+	
 	level = strings.TrimSpace(level)
 	if level == "" {
 		level = "info"
 	}
-	runtime.EventsEmit(a.ctx, "status", StatusMessage{
+	runtime.EventsEmit(ctx, "status", StatusMessage{
 		Level:   level,
 		Code:    code,
 		Message: message,
@@ -331,8 +337,11 @@ func (a *App) StartWatchingFile(path string) error {
 		return err
 	}
 
+	// FIX: Write with mutex protection
+	a.mu.Lock()
 	a.watcher = watcher
 	a.watchedFile = path
+	a.mu.Unlock()
 
 	// Also watch the current theme (if any)
 	a.refreshThemeWatch(getThemeFromConfig())
@@ -345,12 +354,18 @@ func (a *App) StartWatchingFile(path string) error {
 
 // StopWatchingFile stops watching the current file
 func (a *App) StopWatchingFile() {
-	if a.watcher != nil {
-		a.watcher.Close()
-		a.watcher = nil
-		a.watchedFile = ""
-		a.watchedThemeFile = ""
-		a.watchedThemeName = ""
+	// FIX: Read and clear with mutex protection
+	a.mu.Lock()
+	watcher := a.watcher
+	a.watcher = nil
+	a.watchedFile = ""
+	a.watchedThemeFile = ""
+	a.watchedThemeName = ""
+	a.mu.Unlock()
+	
+	// Close watcher outside the lock to avoid blocking
+	if watcher != nil {
+		watcher.Close()
 	}
 }
 
@@ -367,9 +382,16 @@ func (a *App) watchLoop(watcher *fsnotify.Watcher, target string) {
 				continue
 			}
 
+			// FIX: Read theme file info with mutex protection
+			a.mu.Lock()
+			watchedTheme := a.watchedThemeFile
+			themeName := a.watchedThemeName
+			ctx := a.ctx
+			a.mu.Unlock()
+
 			// Theme file changes
-			if changed == a.watchedThemeFile && a.watchedThemeName != "" && (event.Op&(fsnotify.Write|fsnotify.Create) != 0) {
-				runtime.EventsEmit(a.ctx, "theme-changed", a.watchedThemeName)
+			if changed == watchedTheme && themeName != "" && (event.Op&(fsnotify.Write|fsnotify.Create) != 0) {
+				runtime.EventsEmit(ctx, "theme-changed", themeName)
 				continue
 			}
 
@@ -379,7 +401,7 @@ func (a *App) watchLoop(watcher *fsnotify.Watcher, target string) {
 
 			switch {
 			case event.Op&(fsnotify.Write|fsnotify.Create) != 0:
-				runtime.EventsEmit(a.ctx, "file-changed", target)
+				runtime.EventsEmit(ctx, "file-changed", target)
 			case event.Op&(fsnotify.Remove|fsnotify.Rename) != 0:
 				go a.waitForReappear(target)
 			}
@@ -396,7 +418,11 @@ func (a *App) waitForReappear(path string) {
 	for i := 0; i < 10; i++ {
 		time.Sleep(200 * time.Millisecond)
 		if _, err := os.Stat(path); err == nil {
-			runtime.EventsEmit(a.ctx, "file-changed", path)
+			// FIX: Read ctx with mutex protection
+			a.mu.Lock()
+			ctx := a.ctx
+			a.mu.Unlock()
+			runtime.EventsEmit(ctx, "file-changed", path)
 			return
 		}
 	}
@@ -404,15 +430,28 @@ func (a *App) waitForReappear(path string) {
 }
 
 func (a *App) refreshThemeWatch(themeName string) {
-	if a.watcher == nil {
+	// FIX: Check watcher existence with lock
+	a.mu.Lock()
+	watcher := a.watcher
+	a.mu.Unlock()
+	
+	if watcher == nil {
 		return
 	}
 
 	// Remove any previously watched theme file
-	if a.watchedThemeFile != "" {
-		_ = a.watcher.Remove(a.watchedThemeFile)
+	a.mu.Lock()
+	oldThemeFile := a.watchedThemeFile
+	a.mu.Unlock()
+	
+	if oldThemeFile != "" {
+		_ = watcher.Remove(oldThemeFile)
+		
+		// FIX: Clear with mutex protection
+		a.mu.Lock()
 		a.watchedThemeFile = ""
 		a.watchedThemeName = ""
+		a.mu.Unlock()
 	}
 
 	themeName = strings.TrimSpace(themeName)
@@ -431,12 +470,15 @@ func (a *App) refreshThemeWatch(themeName string) {
 	}
 
 	p := filepath.Clean(filepath.Join(dir, name))
-	if err := a.watcher.Add(p); err != nil {
+	if err := watcher.Add(p); err != nil {
 		return
 	}
 
+	// FIX: Write with mutex protection
+	a.mu.Lock()
 	a.watchedThemeFile = p
 	a.watchedThemeName = strings.TrimSuffix(filepath.Base(name), filepath.Ext(name))
+	a.mu.Unlock()
 }
 
 func enforceFileLimit(path string) error {

@@ -8,6 +8,7 @@ Description: A serif-based theme focused on high readability and elegant typogra
 /* @import url('https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,700;1,300&family=Os */
 
 #wrapper {
+  font-family: "Cantarell", serif;
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
@@ -16,10 +17,12 @@ Description: A serif-based theme focused on high readability and elegant typogra
 /* --- VARIABLES --- */
 
 :root {
-  --bg-color: #fcfbf9; /* Warm White */
+  --bg-color: #fcfbf9;
+  /* Warm White */
   --text-color: #333333;
   --heading-color: #111111;
-  --accent-color: #D35400; /* Burnt Orange */
+  --accent-color: #D35400;
+  /* Burnt Orange */
   --code-text: #c7254e;
   --code-bg: #f9f2f4;
   --pre-bg: #f5f5f5;
@@ -28,7 +31,8 @@ Description: A serif-based theme focused on high readability and elegant typogra
 
 /* --- DARK MODE OVERRIDES --- */
 body.inverted {
-  --bg-color: #111111; /* True Black */
+  --bg-color: #111111;
+  /* True Black */
   --text-color: #dddddd;
   --heading-color: #ffffff;
   --accent-color: #E67E22;
@@ -39,19 +43,28 @@ body.inverted {
 }
 
 /* --- BASICS --- */
-html { font-size: 16px; } /* Slightly larger base size for reading */
+html {
+  font-size: 16px;
+}
+
+/* Slightly larger base size for reading */
 
 body {
   margin: 0;
-  font-family: 'Courier', serif;
+  font-family: 'Cantarell', serif;
   line-height: 1.8;
   color: var(--text-color);
   background-color: var(--bg-color);
 }
 
 /* --- TYPOGRAPHY --- */
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'New York', serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Cantarell', serif;
   font-weight: 700;
   color: var(--heading-color);
   text-transform: uppercase;
@@ -68,10 +81,20 @@ h1 {
   padding-right: 20px;
 }
 
-h2 { font-size: 1.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
-h3 { font-size: 1.4rem; color: var(--accent-color); }
+h2 {
+  font-size: 1.8rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 5px;
+}
 
-p { margin-bottom: 1.5em; }
+h3 {
+  font-size: 1.4rem;
+  color: var(--accent-color);
+}
+
+p {
+  margin-bottom: 1.5em;
+}
 
 a {
   color: var(--accent-color);
@@ -81,6 +104,7 @@ a {
   background-repeat: no-repeat;
   transition: background-size .4s ease;
 }
+
 a:hover {
   background-size: 100% 100%;
   color: var(--bg-color);
@@ -103,6 +127,7 @@ pre {
   border-left: 3px solid var(--accent-color);
   overflow-x: auto;
 }
+
 pre code {
   color: inherit;
   background: none;
@@ -122,14 +147,15 @@ img {
   display: block;
   max-width: 100%;
   margin: 20px auto;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin: 2em 0;
-  font-family: 'New York', serif; /* Sans-serif tables look cleaner */
+  font-family: 'Cantarell', serif;
+  /* Sans-serif tables look cleaner */
   font-weight: 400;
   font-size: 0.9em;
 }
@@ -155,8 +181,24 @@ hr {
 
 /* --- PRINT --- */
 @media print {
-  body { background: #fff !important; color: #000 !important; font-size: 12pt; }
-  h1 { border-bottom-color: #000 !important; }
-  a { text-decoration: underline; color: #000; background: none !important; }
-  #wrapper { padding: 0; max-width: 100%; }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+  }
+
+  h1 {
+    border-bottom-color: #000 !important;
+  }
+
+  a {
+    text-decoration: underline;
+    color: #000;
+    background: none !important;
+  }
+
+  #wrapper {
+    padding: 0;
+    max-width: 100%;
+  }
 }
