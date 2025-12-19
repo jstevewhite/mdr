@@ -137,7 +137,8 @@ func sanitizer() *bluemonday.Policy {
 }
 
 func applyCSP(page string) (string, error) {
-	csp := "default-src 'none'; style-src 'self' 'unsafe-inline' data:; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; media-src 'self' data:; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+	// Updated CSP to allow Mermaid.js to work
+	csp := "default-src 'none'; style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' data:; script-src 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'none'; media-src 'self' data:; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
 	tag := fmt.Sprintf(`<meta http-equiv="Content-Security-Policy" content="%s">`, template.HTMLEscapeString(csp))
 	page = strings.Replace(page, "<head>", "<head>"+tag, 1)
 	return page, nil
@@ -226,9 +227,75 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 		fontScale = 200
 	}
 
-	baseCSS := fmt.Sprintf("body{margin:0}img{max-width:100%%}pre{overflow:auto}#wrapper{font-size:%d%% !important;padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%%}", fontScale)
+	baseCSS := fmt.Sprintf("body{margin:0}img{max-width:100%%}pre{overflow:auto}#wrapper{font-size:%d%% !important;padding:32px;max-width:900px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,Cantarell,Helvetica Neue,Arial,sans-serif;line-height:1.55}pre{padding:12px;border-radius:8px}code{padding:2px 4px;border-radius:6px}blockquote{margin:0 0 16px 0;padding:0 0 0 14px}table{width:100%%}.mermaid{text-align:center;margin:16px 0}", fontScale)
 
-	page := fmt.Sprintf("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>%s%s%s</style></head><body class=\"palette-%s\"><div id=\"wrapper\">{{.Body}}</div></body></html>", baseCSS, layoutCSS, palCSS, pMode)
+	// Add Mermaid.js library and initialization
+	// Goldmark renders fenced blocks as: <pre><code class="language-mermaid">...</code></pre>
+	// Mermaid expects diagram text inside an element with class="mermaid".
+	// So we rewrite those code blocks into <div class="mermaid">...</div> and then render.
+		mermaidScript := `<script src='https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js'></script>
+<script>
+(function() {
+  function renderMermaid() {
+    try {
+      var blocks = document.querySelectorAll('pre > code.language-mermaid, pre > code.mermaid');
+      if (!blocks || blocks.length === 0) return;
+
+      blocks.forEach(function(code) {
+        var pre = code.parentElement;
+        if (!pre) return;
+        var container = document.createElement('div');
+        container.className = 'mermaid';
+        container.textContent = code.textContent || '';
+        pre.replaceWith(container);
+      });
+
+      if (typeof mermaid === 'undefined') return;
+
+      var palette = '';
+      try {
+        var m = (document.body && document.body.className || '').match(/\bpalette-([a-z]+)\b/);
+        palette = m ? m[1] : '';
+      } catch (_) {}
+
+      var mermaidTheme = 'default';
+      if (palette === 'dark') {
+        mermaidTheme = 'dark';
+      } else if (palette === 'theme') {
+        try {
+          mermaidTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
+        } catch (_) {
+          mermaidTheme = 'default';
+        }
+      }
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: mermaidTheme,
+        // Prefer strict mode since the iframe runs scripts.
+        securityLevel: 'strict'
+      });
+
+      if (typeof mermaid.run === 'function') {
+        mermaid.run({ querySelector: '.mermaid' });
+      } else if (typeof mermaid.init === 'function') {
+        mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+      }
+    } catch (e) {
+      // Best-effort; rendering should never break the rest of the document.
+      console.error('Mermaid render failed:', e);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMermaid);
+  } else {
+    renderMermaid();
+  }
+})();
+</script>`
+
+	page := fmt.Sprintf("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>%s%s%s</style>%s</head><body class=\"palette-%s\"><div id=\"wrapper\">{{.Body}}</div></body></html>", baseCSS, layoutCSS, palCSS, mermaidScript, pMode)
 	if updated, err := applyCSP(page); err == nil {
 		page = updated
 	}

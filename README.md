@@ -16,6 +16,7 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 - Font size controls with persistence
 - Status bar for standardized info/errors
 - **Keyboard shortcuts** for common operations
+- **Mermaid diagram support** for flowcharts, sequence diagrams, and more
 
 Settings are stored in:
 
@@ -25,6 +26,32 @@ Settings are stored in:
 Other settings:
 
 - `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
+
+## Mermaid Diagrams
+
+mdr supports [Mermaid](https://mermaid.js.org/) diagrams out of the box. Simply use a fenced code block with the `mermaid` language identifier:
+
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Success]
+    B -->|No| D[Retry]
+```
+````
+
+Supported diagram types include:
+- Flowcharts
+- Sequence diagrams
+- Class diagrams
+- State diagrams
+- Entity relationship diagrams
+- User journey diagrams
+- Gantt charts
+- Pie charts
+- And more!
+
+See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax details.
 
 ## Keyboard Shortcuts
 

@@ -77,7 +77,9 @@ const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 const modifierKey = isMac ? 'metaKey' : 'ctrlKey';
 
 if (previewEl) {
-  previewEl.setAttribute('sandbox', 'allow-same-origin');
+  // Mermaid (and any other client-side enhancements) require scripts to run inside the preview.
+  // Keep the iframe sandboxed, but allow scripts so Mermaid can render.
+  previewEl.setAttribute('sandbox', 'allow-same-origin allow-scripts');
   previewEl.setAttribute('referrerpolicy', 'no-referrer');
   previewEl.setAttribute('allow', '');
 }
