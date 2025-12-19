@@ -295,3 +295,75 @@ func getMaxFileBytesFromConfig() int64 {
 	}
 	return int64(n) * 1024 * 1024
 }
+
+func getSearchCaseSensitiveFromConfig() bool {
+	cfg, err := readConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["searchCaseSensitive"])
+	return v == "true" || v == "1" || v == "yes"
+}
+
+func setSearchCaseSensitiveInConfig(enabled bool) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if enabled {
+		cfg["searchCaseSensitive"] = "true"
+	} else {
+		cfg["searchCaseSensitive"] = "false"
+	}
+
+	return writeConfig(cfg)
+}
+
+func getSearchHighlightColorFromConfig() string {
+	cfg, err := readConfig()
+	if err != nil {
+		return "yellow"
+	}
+
+	v := strings.TrimSpace(cfg["searchHighlightColor"])
+	if v == "" {
+		return "yellow"
+	}
+	// Validate color options
+	validColors := []string{"yellow", "green", "blue", "orange", "purple"}
+	for _, color := range validColors {
+		if v == color {
+			return v
+		}
+	}
+	return "yellow"
+}
+
+func setSearchHighlightColorInConfig(color string) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	color = strings.TrimSpace(color)
+	if color == "" {
+		color = "yellow"
+	}
+	// Validate color options
+	validColors := []string{"yellow", "green", "blue", "orange", "purple"}
+	isValid := false
+	for _, validColor := range validColors {
+		if color == validColor {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
+		color = "yellow"
+	}
+
+	cfg["searchHighlightColor"] = color
+	return writeConfig(cfg)
+}

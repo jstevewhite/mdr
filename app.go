@@ -24,6 +24,8 @@ type App struct {
 	watchedFile      string
 	watchedThemeFile string
 	watchedThemeName string
+	searchResult     SearchResult
+	currentDocument  string
 }
 
 // NewApp creates a new App application struct
@@ -121,6 +123,24 @@ type StatusMessage struct {
 	Message string `json:"message"`
 }
 
+// SearchResult represents a search match
+type SearchResult struct {
+	Query         string        `json:"query"`
+	Matches       []SearchMatch `json:"matches"`
+	Total         int           `json:"total"`
+	CurrentIndex  int           `json:"currentIndex"`
+	CaseSensitive bool          `json:"caseSensitive"`
+}
+
+// SearchMatch represents a single search match
+type SearchMatch struct {
+	ID       string `json:"id"`
+	Text     string `json:"text"`
+	Context  string `json:"context"`
+	Position int    `json:"position"`
+	Length   int    `json:"length"`
+}
+
 func (a *App) RenderMarkdown(markdown string, theme string) (string, error) {
 	return RenderMarkdownToHTMLDocument(markdown, theme, getPaletteFromConfig(), getFontScaleFromConfig())
 }
@@ -180,6 +200,22 @@ func (a *App) GetTOCPinned() bool {
 
 func (a *App) SetTOCPinned(pinned bool) error {
 	return setTOCPinnedInConfig(pinned)
+}
+
+func (a *App) GetSearchCaseSensitive() bool {
+	return getSearchCaseSensitiveFromConfig()
+}
+
+func (a *App) SetSearchCaseSensitive(enabled bool) error {
+	return setSearchCaseSensitiveInConfig(enabled)
+}
+
+func (a *App) GetSearchHighlightColor() string {
+	return getSearchHighlightColorFromConfig()
+}
+
+func (a *App) SetSearchHighlightColor(color string) error {
+	return setSearchHighlightColorInConfig(color)
 }
 
 func (a *App) ListThemes() ([]string, error) {
@@ -267,6 +303,10 @@ func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette str
 	}
 
 	markdown := string(data)
+	
+	// Store document content for searching
+	a.SetCurrentDocument(markdown)
+	
 	output, err := RenderMarkdownWithTOC(markdown, theme, palette, getFontScaleFromConfig())
 	if err != nil {
 		return RenderResult{}, err
@@ -518,4 +558,135 @@ func normalizePath(p string) string {
 	}
 
 	return filepath.Clean(p)
+}
+
+// SearchDocument searches for text in the current document
+func (a *App) SearchDocument(query string, caseSensitive bool) (SearchResult, error) {
+	a.mu.Lock()
+	document := a.currentDocument
+	a.mu.Unlock()
+
+	if document == "" {
+		return SearchResult{}, fmt.Errorf("no document loaded")
+	}
+
+	query = strings.TrimSpace(query)
+	if query == "" {
+		a.mu.Lock()
+		a.searchResult = SearchResult{}
+		a.mu.Unlock()
+		return SearchResult{}, nil
+	}
+
+	// Perform search
+	searchText := document
+	searchQuery := query
+	if !caseSensitive {
+		searchText = strings.ToLower(searchText)
+		searchQuery = strings.ToLower(searchQuery)
+	}
+
+	var matches []SearchMatch
+	currentPos := 0
+	matchID := 0
+
+	for {
+		pos := strings.Index(searchText[currentPos:], searchQuery)
+		if pos == -1 {
+			break
+		}
+
+		actualPos := currentPos + pos
+		contextStart := actualPos - 50
+		if contextStart < 0 {
+			contextStart = 0
+		}
+		contextEnd := actualPos + len(query) + 50
+		if contextEnd > len(document) {
+			contextEnd = len(document)
+		}
+
+		context := document[contextStart:contextEnd]
+		matchText := document[actualPos : actualPos+len(query)]
+
+		matches = append(matches, SearchMatch{
+			ID:       fmt.Sprintf("search-match-%d", matchID),
+			Text:     matchText,
+			Context:  context,
+			Position: actualPos,
+			Length:   len(query),
+		})
+
+		matchID++
+		currentPos = actualPos + 1
+
+		// Limit results to prevent performance issues
+		if len(matches) >= 1000 {
+			break
+		}
+	}
+
+	result := SearchResult{
+		Query:         query,
+		Matches:       matches,
+		Total:         len(matches),
+		CurrentIndex:  0,
+		CaseSensitive: caseSensitive,
+	}
+
+	a.mu.Lock()
+	a.searchResult = result
+	a.mu.Unlock()
+
+	return result, nil
+}
+
+// GetSearchState returns the current search state
+func (a *App) GetSearchState() SearchResult {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.searchResult
+}
+
+// ClearSearch clears the current search
+func (a *App) ClearSearch() {
+	a.mu.Lock()
+	a.searchResult = SearchResult{}
+	a.mu.Unlock()
+}
+
+// NavigateSearch moves to the next or previous match
+func (a *App) NavigateSearch(direction string) (SearchResult, error) {
+	a.mu.Lock()
+	result := a.searchResult
+	a.mu.Unlock()
+
+	if result.Total == 0 {
+		return result, nil
+	}
+
+	if direction == "next" {
+		result.CurrentIndex++
+		if result.CurrentIndex >= result.Total {
+			result.CurrentIndex = 0 // Wrap around
+		}
+	} else if direction == "prev" {
+		result.CurrentIndex--
+		if result.CurrentIndex < 0 {
+			result.CurrentIndex = result.Total - 1 // Wrap around
+		}
+	}
+
+	a.mu.Lock()
+	a.searchResult = result
+	a.mu.Unlock()
+
+	return result, nil
+}
+
+// SetCurrentDocument stores the current document content for searching
+func (a *App) SetCurrentDocument(content string) {
+	a.mu.Lock()
+	a.currentDocument = content
+	a.mu.Unlock()
 }

@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile } from '../wailsjs/go/main/App';
+import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
@@ -53,6 +53,25 @@ document.querySelector('#app').innerHTML = `
       <div id="status" class="status">Ready</div>
     </footer>
   </div>
+  
+  <!-- Search Interface -->
+  <div id="searchBar" class="search-bar" style="display: none;">
+    <div class="search-controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search in document... (/)">
+      <div class="search-info">
+        <span id="searchResults" class="search-results"></span>
+      </div>
+      <div class="search-buttons">
+        <button id="searchPrev" class="search-btn" title="Previous match (Shift+F3)">↑</button>
+        <button id="searchNext" class="search-btn" title="Next match (F3)">↓</button>
+        <label class="search-case-label" title="Case sensitive (Ctrl+Shift+F)">
+          <input type="checkbox" id="searchCaseSensitive" class="search-case-checkbox">
+          Aa
+        </label>
+        <button id="searchClose" class="search-close-btn" title="Close (Esc)">✕</button>
+      </div>
+    </div>
+  </div>
 `;
 
 const themeEl = document.getElementById('theme');
@@ -72,6 +91,15 @@ const tocPinEl = document.getElementById('tocPin');
 const statusBarEl = document.querySelector('.status-bar');
 const statusTextEl = document.getElementById('status');
 
+// Search elements
+const searchBarEl = document.getElementById('searchBar');
+const searchInputEl = document.getElementById('searchInput');
+const searchResultsEl = document.getElementById('searchResults');
+const searchPrevEl = document.getElementById('searchPrev');
+const searchNextEl = document.getElementById('searchNext');
+const searchCloseEl = document.getElementById('searchClose');
+const searchCaseSensitiveEl = document.getElementById('searchCaseSensitive');
+
 // Keyboard shortcuts setup
 const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 const modifierKey = isMac ? 'metaKey' : 'ctrlKey';
@@ -90,6 +118,12 @@ let autoReloadEnabled = false;
 let tocVisible = false;
 let tocPinned = false;
 let currentTOC = [];
+
+// Search state
+let searchOpen = false;
+let currentSearchResults = [];
+let currentSearchIndex = -1;
+let searchDebounceTimer = null;
 
 function setControlsEnabled(enabled) {
   const disabled = !enabled;
@@ -126,6 +160,196 @@ function updateFontUI() {
   if (fontValEl) {
     fontValEl.textContent = `${fontScale}%`;
   }
+}
+
+// Search functionality
+function openSearch() {
+  searchOpen = true;
+  searchBarEl.style.display = 'block';
+  searchInputEl.focus();
+  searchInputEl.select();
+  setStatus('info', 'Search opened');
+}
+
+function closeSearch() {
+  searchOpen = false;
+  searchBarEl.style.display = 'none';
+  searchInputEl.value = '';
+  searchResultsEl.textContent = '';
+  currentSearchResults = [];
+  currentSearchIndex = -1;
+  clearSearchHighlights();
+  setStatus('info', 'Search closed');
+}
+
+function clearSearchHighlights() {
+  // Clear highlights in the preview iframe
+  try {
+    const iframeDoc = previewEl.contentWindow.document;
+    const highlights = iframeDoc.querySelectorAll('.search-highlight, .search-highlight-current');
+    highlights.forEach(highlight => {
+      const parent = highlight.parentNode;
+      while (highlight.firstChild) {
+        parent.insertBefore(highlight.firstChild, highlight);
+      }
+      parent.removeChild(highlight);
+    });
+  } catch (err) {
+    console.error('Failed to clear search highlights:', err);
+  }
+}
+
+function performSearch(query) {
+  if (!query || !currentPath) {
+    clearSearchHighlights();
+    searchResultsEl.textContent = '';
+    currentSearchResults = [];
+    currentSearchIndex = -1;
+    return;
+  }
+
+  // Debounce search to improve performance
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(async () => {
+    try {
+      const caseSensitive = searchCaseSensitiveEl.checked;
+      const result = await SearchDocument(query, caseSensitive);
+      
+      currentSearchResults = result.matches || [];
+      currentSearchIndex = result.currentIndex || 0;
+      
+      if (currentSearchResults.length === 0) {
+        searchResultsEl.textContent = 'No matches';
+        clearSearchHighlights();
+      } else {
+        searchResultsEl.textContent = `${currentSearchIndex + 1} of ${currentSearchResults.length}`;
+        highlightSearchResults();
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      searchResultsEl.textContent = 'Search failed';
+      clearSearchHighlights();
+    }
+  }, 300); // 300ms debounce
+}
+
+function highlightSearchResults() {
+  if (currentSearchResults.length === 0) return;
+  
+  try {
+    const iframeDoc = previewEl.contentWindow.document;
+    clearSearchHighlights();
+    
+    // Get the current search query and create highlight elements
+    const query = searchInputEl.value;
+    if (!query) return;
+    
+    // Create regex pattern for case-sensitive or case-insensitive search
+    const flags = searchCaseSensitiveEl.checked ? 'g' : 'gi';
+    const pattern = new RegExp(escapeRegExp(query), flags);
+    
+    // Function to highlight text in an element
+    function highlightElement(element) {
+      if (element.nodeType === Node.TEXT_NODE) {
+        const text = element.textContent;
+        if (!pattern.test(text)) return;
+        
+        pattern.lastIndex = 0; // Reset regex state
+        const matches = [];
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+          matches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            text: match[0]
+          });
+        }
+        
+        if (matches.length === 0) return;
+        
+        // Create a document fragment to hold the new content
+        const fragment = iframeDoc.createDocumentFragment();
+        let lastIndex = 0;
+        
+        matches.forEach((match, index) => {
+          // Add text before match
+          if (match.start > lastIndex) {
+            fragment.appendChild(iframeDoc.createTextNode(text.slice(lastIndex, match.start)));
+          }
+          
+          // Add highlighted match
+          const mark = iframeDoc.createElement('mark');
+          mark.className = 'search-highlight';
+          if (index === currentSearchIndex) {
+            mark.classList.add('search-highlight-current');
+          }
+          mark.textContent = match.text;
+          fragment.appendChild(mark);
+          
+          lastIndex = match.end;
+        });
+        
+        // Add remaining text
+        if (lastIndex < text.length) {
+          fragment.appendChild(iframeDoc.createTextNode(text.slice(lastIndex)));
+        }
+        
+        // Replace the text node with the fragment
+        element.parentNode.replaceChild(fragment, element);
+      } else if (element.nodeType === Node.ELEMENT_NODE) {
+        // Skip certain elements that shouldn't be highlighted
+        const tagName = element.tagName.toLowerCase();
+        if (['script', 'style', 'pre', 'code'].includes(tagName)) return;
+        
+        // Process child nodes
+        const childNodes = Array.from(element.childNodes);
+        childNodes.forEach(child => highlightElement(child));
+      }
+    }
+    
+    // Start highlighting from the body element
+    highlightElement(iframeDoc.body);
+    
+    // Scroll to current match
+    if (currentSearchIndex >= 0 && currentSearchIndex < currentSearchResults.length) {
+      const currentMatch = currentSearchResults[currentSearchIndex];
+      // Find the current highlighted element
+      const currentHighlight = iframeDoc.querySelector('.search-highlight-current');
+      if (currentHighlight) {
+        currentHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to highlight search results:', err);
+  }
+}
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function navigateSearch(direction) {
+  if (currentSearchResults.length === 0) return;
+  
+  if (direction === 'next') {
+    currentSearchIndex++;
+    if (currentSearchIndex >= currentSearchResults.length) {
+      currentSearchIndex = 0; // Wrap around
+    }
+  } else if (direction === 'prev') {
+    currentSearchIndex--;
+    if (currentSearchIndex < 0) {
+      currentSearchIndex = currentSearchResults.length - 1; // Wrap around
+    }
+  }
+  
+  // Update UI
+  if (currentSearchResults.length > 0) {
+    searchResultsEl.textContent = `${currentSearchIndex + 1} of ${currentSearchResults.length}`;
+    highlightSearchResults();
+  }
+  
+  setStatus('info', `Match ${currentSearchIndex + 1} of ${currentSearchResults.length}`);
 }
 
 function setPreview(html, charCount, wordCount) {
@@ -307,6 +531,13 @@ async function rerender() {
       setPreview(res.html, res.charCount, res.wordCount);
       renderTOC(res.toc);
       updateTOCTheme();
+      
+      // Re-run search if there was an active search
+      if (searchOpen && searchInputEl.value) {
+        setTimeout(() => {
+          performSearch(searchInputEl.value);
+        }, 100); // Small delay to ensure iframe is fully loaded
+      }
     });
   } catch (err) {
     console.error(err);
@@ -395,6 +626,44 @@ autoReloadEl.addEventListener('change', async () => {
   }
 });
 
+// Search event listeners
+searchInputEl.addEventListener('input', (e) => {
+  performSearch(e.target.value);
+});
+
+searchInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    navigateSearch(e.shiftKey ? 'prev' : 'next');
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeSearch();
+  }
+});
+
+searchPrevEl.addEventListener('click', () => {
+  navigateSearch('prev');
+});
+
+searchNextEl.addEventListener('click', () => {
+  navigateSearch('next');
+});
+
+searchCloseEl.addEventListener('click', () => {
+  closeSearch();
+});
+
+searchCaseSensitiveEl.addEventListener('change', async () => {
+  // Save the case sensitivity setting
+  try {
+    await SetSearchCaseSensitive(searchCaseSensitiveEl.checked);
+  } catch (err) {
+    console.error('Failed to save search case sensitivity:', err);
+  }
+  // Re-run current search with new case sensitivity
+  performSearch(searchInputEl.value);
+});
+
 async function renderInitialArgs() {
   try {
     setControlsEnabled(false);
@@ -478,6 +747,14 @@ async function renderInitialArgs() {
       console.error(err);
     }
 
+    // Load search settings
+    try {
+      const savedSearchCaseSensitive = await GetSearchCaseSensitive();
+      searchCaseSensitiveEl.checked = savedSearchCaseSensitive;
+    } catch (err) {
+      console.error(err);
+    }
+
     const args = await GetLaunchArgs();
     if (!args || args.length < 1) {
       return;
@@ -551,11 +828,39 @@ async function cycleTheme() {
 function handleKeyboardShortcuts(e) {
     // Check if we're focused on an input element (let browser handle those)
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        // Allow Escape in search input to close search
+        if (e.target.id === 'searchInput' && e.key === 'Escape') {
+            // Let the search input handler handle this
+            return;
+        }
         return;
     }
 
+    // Search functionality - NEW
+    else if (e.key === '/' && !e[modifierKey] && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        openSearch();
+        setStatus('info', 'Search opened (/)');
+    }
+    else if (e.key === 'f' && e[modifierKey]) {  // Ctrl+F / Cmd+F
+        e.preventDefault();
+        openSearch();
+        setStatus('info', `Search opened (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+F)`);
+    }
+    else if (e.key === 'F3') {  // F3 - Next match
+        e.preventDefault();
+        if (searchOpen) {
+            navigateSearch('next');
+        }
+    }
+    else if (e.key === 'Escape' && searchOpen) {
+        e.preventDefault();
+        closeSearch();
+        setStatus('info', 'Search closed (Esc)');
+    }
+
     // File operations
-    if (e.key === 'o' && e[modifierKey]) {
+    else if (e.key === 'o' && e[modifierKey]) {
         e.preventDefault();
         openAndRender();
         setStatus('info', `Opened file (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+O)`);
@@ -614,10 +919,14 @@ function handleKeyboardShortcuts(e) {
         cycleTheme();
     }
 
-    // Close TOC with Escape
-    else if (e.key === 'Escape' && tocVisible) {
-        e.preventDefault();
-        if (tocVisible) {
+    // Close interfaces with Escape
+    else if (e.key === 'Escape') {
+        if (searchOpen) {
+            e.preventDefault();
+            closeSearch();
+            setStatus('info', 'Search closed (Esc)');
+        } else if (tocVisible) {
+            e.preventDefault();
             toggleTOC();
             setStatus('info', 'Closed TOC (Esc)');
         }
