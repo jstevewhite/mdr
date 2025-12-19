@@ -223,7 +223,7 @@ function performSearch(query) {
         clearSearchHighlights();
       } else {
         searchResultsEl.textContent = `${currentSearchIndex + 1} of ${currentSearchResults.length}`;
-        highlightSearchResults();
+        highlightSearchResults(); // Initial search - create all highlights
       }
     } catch (err) {
       console.error('Search error:', err);
@@ -310,14 +310,16 @@ function highlightSearchResults() {
     // Start highlighting from the body element
     highlightElement(iframeDoc.body);
     
-    // Scroll to current match
+    // Scroll to current match with delay to ensure DOM is updated
     if (currentSearchIndex >= 0 && currentSearchIndex < currentSearchResults.length) {
       const currentMatch = currentSearchResults[currentSearchIndex];
-      // Find the current highlighted element
-      const currentHighlight = iframeDoc.querySelector('.search-highlight-current');
-      if (currentHighlight) {
-        currentHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      // Use setTimeout to ensure DOM is updated before scrolling
+      setTimeout(() => {
+        const currentHighlight = iframeDoc.querySelector('.search-highlight-current');
+        if (currentHighlight) {
+          currentHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50); // 50ms delay
     }
   } catch (err) {
     console.error('Failed to highlight search results:', err);
@@ -328,28 +330,64 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function navigateSearch(direction) {
+async function navigateSearch(direction) {
   if (currentSearchResults.length === 0) return;
   
-  if (direction === 'next') {
-    currentSearchIndex++;
-    if (currentSearchIndex >= currentSearchResults.length) {
-      currentSearchIndex = 0; // Wrap around
-    }
-  } else if (direction === 'prev') {
-    currentSearchIndex--;
-    if (currentSearchIndex < 0) {
-      currentSearchIndex = currentSearchResults.length - 1; // Wrap around
+  try {
+    // Call backend to update search state
+    const result = await NavigateSearch(direction);
+    currentSearchIndex = result.currentIndex;
+  } catch (err) {
+    console.error('Failed to navigate search:', err);
+    // Fallback to local navigation
+    if (direction === 'next') {
+      currentSearchIndex++;
+      if (currentSearchIndex >= currentSearchResults.length) {
+        currentSearchIndex = 0;
+      }
+    } else if (direction === 'prev') {
+      currentSearchIndex--;
+      if (currentSearchIndex < 0) {
+        currentSearchIndex = currentSearchResults.length - 1;
+      }
     }
   }
   
   // Update UI
   if (currentSearchResults.length > 0) {
     searchResultsEl.textContent = `${currentSearchIndex + 1} of ${currentSearchResults.length}`;
-    highlightSearchResults();
+    // Just update current highlight and scroll - don't recreate all highlights
+    updateCurrentHighlight();
   }
   
   setStatus('info', `Match ${currentSearchIndex + 1} of ${currentSearchResults.length}`);
+}
+
+function updateCurrentHighlight() {
+  try {
+    const iframeDoc = previewEl.contentWindow.document;
+    
+    // Remove current highlight class from all highlights
+    const highlights = iframeDoc.querySelectorAll('.search-highlight');
+    highlights.forEach(highlight => {
+      highlight.classList.remove('search-highlight-current');
+    });
+    
+    // Add current highlight class to the correct one
+    if (currentSearchIndex >= 0 && currentSearchIndex < highlights.length) {
+      highlights[currentSearchIndex].classList.add('search-highlight-current');
+      
+      // Scroll to current highlight with small delay
+      setTimeout(() => {
+        const currentHighlight = iframeDoc.querySelector('.search-highlight-current');
+        if (currentHighlight) {
+          currentHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+    }
+  } catch (err) {
+    console.error('Failed to update current highlight:', err);
+  }
 }
 
 function setPreview(html, charCount, wordCount) {
