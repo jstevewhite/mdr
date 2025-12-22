@@ -32,6 +32,23 @@ Other settings:
 - `searchCaseSensitive` - search case sensitivity preference
 - `searchHighlightColor` - highlight color for search results (yellow/green/blue/orange/purple)
 
+## Recent Files
+
+mdr automatically tracks recently opened files and displays them in a dropdown menu in the toolbar. This provides quick access to frequently referenced documents.
+
+**Features:**
+- Tracks up to 10 most recently opened files
+- Automatically updates when files are opened (via dialog, command line, or drag-drop)
+- Removes duplicates and keeps most recent at the top
+- Shows full file path on hover
+- Click to open any recent file immediately
+
+**Configuration:**
+Recent files are stored in `~/.config/mdr/mdr.conf` with the format:
+```
+recentFiles=/path/to/file1.md|1734825600,/path/to/file2.md|1734825000
+```
+
 ## Mermaid Diagrams
 
 mdr supports [Mermaid](https://mermaid.js.org/) diagrams out of the box. Simply use a fenced code block with the `mermaid` language identifier:
