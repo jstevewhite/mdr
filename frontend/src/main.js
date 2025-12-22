@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive } from '../wailsjs/go/main/App';
+import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive, GetRecentFiles, AddRecentFile, ClearRecentFiles } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
@@ -9,6 +9,11 @@ document.querySelector('#app').innerHTML = `
     <header class="toolbar">
       <div class="brand">mdr</div>
       <div class="controls">
+        <div class="recent-files-container">
+          <select id="recentFiles" class="select">
+            <option value="">Recent Files...</option>
+          </select>
+        </div>
         <button id="tocToggle" class="btn" title="Toggle Table of Contents">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path d="M0 2h16v2H0V2zm0 5h16v2H0V7zm0 5h16v2H0v-2z"/>
@@ -100,6 +105,9 @@ const searchNextEl = document.getElementById('searchNext');
 const searchCloseEl = document.getElementById('searchClose');
 const searchCaseSensitiveEl = document.getElementById('searchCaseSensitive');
 
+// Recent files elements
+const recentFilesEl = document.getElementById('recentFiles');
+
 // Keyboard shortcuts setup
 const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
 const modifierKey = isMac ? 'metaKey' : 'ctrlKey';
@@ -124,6 +132,9 @@ let searchOpen = false;
 let currentSearchResults = [];
 let currentSearchIndex = -1;
 let searchDebounceTimer = null;
+
+// Recent files state
+let recentFiles = [];
 
 function setControlsEnabled(enabled) {
   const disabled = !enabled;
@@ -390,6 +401,43 @@ function updateCurrentHighlight() {
   }
 }
 
+// Recent files functions
+async function loadRecentFiles() {
+  try {
+    const files = await GetRecentFiles();
+    recentFiles = files;
+    
+    // Clear existing options except the first
+    recentFilesEl.innerHTML = '<option value="">Recent Files...</option>';
+    
+    if (files.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No recent files';
+      opt.disabled = true;
+      recentFilesEl.appendChild(opt);
+      return;
+    }
+    
+    // Add each recent file
+    files.forEach((file, index) => {
+      const opt = document.createElement('option');
+      opt.value = file.path;
+      
+      // Format: "1. filename" 
+      const basename = file.path.split('/').pop().split('\\').pop();
+      const display = `${index + 1}. ${basename}`;
+      opt.textContent = display;
+      opt.title = file.path; // Full path on hover
+      
+      recentFilesEl.appendChild(opt);
+    });
+    
+  } catch (err) {
+    console.error('Failed to load recent files:', err);
+  }
+}
+
 function setPreview(html, charCount, wordCount) {
   const doc = html || '<!DOCTYPE html><html><body></body></html>';
 
@@ -536,6 +584,10 @@ async function openAndRender() {
     }
     currentPath = res.path;
     pathEl.textContent = currentPath;
+    
+    // Update recent files
+    await loadRecentFiles();
+    
     requestAnimationFrame(() => {
       setPreview(res.html, res.charCount, res.wordCount);
       renderTOC(res.toc);
@@ -702,6 +754,47 @@ searchCaseSensitiveEl.addEventListener('change', async () => {
   performSearch(searchInputEl.value);
 });
 
+recentFilesEl.addEventListener('change', async () => {
+  const path = recentFilesEl.value;
+  if (!path) return;
+  
+  try {
+    const theme = themeEl.value;
+    const palette = paletteEl.value;
+    const res = await RenderFileWithPaletteAndTOC(path, theme, palette);
+    
+    currentPath = path;
+    pathEl.textContent = path;
+    
+    requestAnimationFrame(() => {
+      setPreview(res.html, res.charCount, res.wordCount);
+      renderTOC(res.toc);
+      updateTOCTheme();
+    });
+    
+    // Update recent files (move to top, refresh dropdown)
+    await AddRecentFile(path);
+    await loadRecentFiles();
+    
+    // Start watching if auto-reload enabled
+    if (autoReloadEnabled && currentPath) {
+      try {
+        await StartWatchingFile(currentPath);
+      } catch (err) {
+        console.error('Failed to start watching file:', err);
+      }
+    }
+    
+    // Reset dropdown to first option
+    recentFilesEl.value = '';
+    
+    setStatus('info', `Opened: ${path.split('/').pop()}`);
+  } catch (err) {
+    console.error(err);
+    setStatus('error', formatError(err));
+  }
+});
+
 async function renderInitialArgs() {
   try {
     setControlsEnabled(false);
@@ -789,6 +882,13 @@ async function renderInitialArgs() {
     try {
       const savedSearchCaseSensitive = await GetSearchCaseSensitive();
       searchCaseSensitiveEl.checked = savedSearchCaseSensitive;
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Load recent files
+    try {
+      await loadRecentFiles();
     } catch (err) {
       console.error(err);
     }
@@ -979,6 +1079,10 @@ EventsOn('file-open', async (paths) => {
     }
     currentPath = p;
     pathEl.textContent = currentPath;
+    
+    // Update recent files
+    await loadRecentFiles();
+    
     await rerender();
 
     if (autoReloadEnabled && currentPath) {

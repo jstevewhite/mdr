@@ -65,6 +65,8 @@ func (a *App) handleFileOpen(filePaths []string) {
 			continue
 		}
 		normalized = append(normalized, np)
+		// Add to recent files
+		_ = addRecentFile(np)
 	}
 	if len(normalized) == 0 {
 		return
@@ -139,6 +141,12 @@ type SearchMatch struct {
 	Context  string `json:"context"`
 	Position int    `json:"position"`
 	Length   int    `json:"length"`
+}
+
+// RecentFile represents a recently opened file
+type RecentFile struct {
+	Path      string `json:"path"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 func (a *App) RenderMarkdown(markdown string, theme string) (string, error) {
@@ -337,6 +345,9 @@ func (a *App) OpenAndRender(theme string, palette string) (RenderResult, error) 
 	if selection == "" {
 		return RenderResult{}, nil
 	}
+
+	// Add to recent files
+	_ = addRecentFile(selection)
 
 	result, err := a.RenderFileWithPaletteAndTOC(selection, theme, palette)
 	if err != nil {
@@ -689,4 +700,19 @@ func (a *App) SetCurrentDocument(content string) {
 	a.mu.Lock()
 	a.currentDocument = content
 	a.mu.Unlock()
+}
+
+// GetRecentFiles returns the list of recently opened files
+func (a *App) GetRecentFiles() ([]RecentFile, error) {
+	return getRecentFilesFromConfig(), nil
+}
+
+// AddRecentFile adds a file to the recent files list
+func (a *App) AddRecentFile(path string) error {
+	return addRecentFile(path)
+}
+
+// ClearRecentFiles clears the recent files list
+func (a *App) ClearRecentFiles() error {
+	return clearRecentFiles()
 }

@@ -1,5 +1,19 @@
 export namespace main {
 	
+	export class RecentFile {
+	    path: string;
+	    timestamp: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RecentFile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.timestamp = source["timestamp"];
+	    }
+	}
 	export class TOCItem {
 	    id: string;
 	    text: string;

@@ -483,3 +483,18 @@
     background-color: #ffb300;
     color: #000;
 }
+
+/* Recent Files Styles */
+.recent-files-container {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+#recentFiles {
+    min-width: 180px;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

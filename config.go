@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func configPath() (string, error) {
@@ -366,4 +367,105 @@ func setSearchHighlightColorInConfig(color string) error {
 
 	cfg["searchHighlightColor"] = color
 	return writeConfig(cfg)
+}
+
+func getRecentFilesFromConfig() []RecentFile {
+	cfg, err := readConfig()
+	if err != nil {
+		return []RecentFile{}
+	}
+
+	recentStr := strings.TrimSpace(cfg["recentFiles"])
+	if recentStr == "" {
+		return []RecentFile{}
+	}
+
+	var recent []RecentFile
+	entries := strings.Split(recentStr, ",")
+	for _, entry := range entries {
+		parts := strings.Split(entry, "|")
+		if len(parts) == 2 {
+			path := strings.TrimSpace(parts[0])
+			timestamp := strings.TrimSpace(parts[1])
+			if path != "" {
+				ts, _ := strconv.ParseInt(timestamp, 10, 64)
+				recent = append(recent, RecentFile{Path: path, Timestamp: ts})
+			}
+		}
+	}
+	return recent
+}
+
+func setRecentFilesInConfig(files []RecentFile) error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 0 {
+		cfg["recentFiles"] = ""
+		return writeConfig(cfg)
+	}
+
+	var entries []string
+	for _, f := range files {
+		entries = append(entries, f.Path+"|"+strconv.FormatInt(f.Timestamp, 10))
+	}
+
+	cfg["recentFiles"] = strings.Join(entries, ",")
+	return writeConfig(cfg)
+}
+
+func addRecentFile(path string) error {
+	path = normalizePath(path)
+	if path == "" {
+		return nil
+	}
+
+	recent := getRecentFilesFromConfig()
+	now := time.Now().Unix()
+
+	// Remove if already exists (will be re-added at top)
+	var filtered []RecentFile
+	for _, f := range recent {
+		if f.Path != path {
+			filtered = append(filtered, f)
+		}
+	}
+
+	// Add new entry at the beginning
+	filtered = append([]RecentFile{{Path: path, Timestamp: now}}, filtered...)
+
+	// Keep only 10 most recent
+	if len(filtered) > 10 {
+		filtered = filtered[:10]
+	}
+
+	return setRecentFilesInConfig(filtered)
+}
+
+func clearRecentFiles() error {
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+	cfg["recentFiles"] = ""
+	return writeConfig(cfg)
+}
+
+func getRecentFilesMaxAgeDays() int {
+	cfg, err := readConfig()
+	if err != nil {
+		return 30
+	}
+
+	v := strings.TrimSpace(cfg["recentFilesMaxAge"])
+	if v == "" {
+		return 30
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 {
+		return 30
+	}
+	return n
 }

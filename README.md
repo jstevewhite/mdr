@@ -9,6 +9,7 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 ## Features
 
 - Open and render local Markdown files
+- **Recent Files** dropdown for quick access to previously opened documents
 - Table of Contents sidebar with pin/toggle
 - Auto-reload for files and custom themes (works with atomic-save editors)
 - Layout themes via user CSS files in `~/.config/mdr/mdthemes/`
@@ -17,6 +18,7 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 - Status bar for standardized info/errors
 - **Keyboard shortcuts** for common operations
 - **Mermaid diagram support** for flowcharts, sequence diagrams, and more
+- **Search functionality** with navigation and case sensitivity options
 
 Settings are stored in:
 
@@ -26,6 +28,9 @@ Settings are stored in:
 Other settings:
 
 - `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
+- `recentFiles` - tracks up to 10 most recently opened files (format: `path|timestamp,path|timestamp,...`)
+- `searchCaseSensitive` - search case sensitivity preference
+- `searchHighlightColor` - highlight color for search results (yellow/green/blue/orange/purple)
 
 ## Mermaid Diagrams
 
@@ -58,6 +63,7 @@ See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax detail
 ### File Operations
 - **Open File**: `Ctrl+O` (Windows/Linux) / `Cmd+O` (Mac)
 - **Reload File**: `Ctrl+R` (Windows/Linux) / `Cmd+R` (Mac)
+- **Open Recent File**: Select from dropdown in toolbar
 
 ### View Controls
 - **Toggle TOC**: `Ctrl+T` (Windows/Linux) / `Cmd+T` (Mac)
@@ -66,12 +72,19 @@ See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax detail
 - **Increase Font Size**: `Ctrl+` (Windows/Linux) / `Cmd+` (Mac)
 - **Decrease Font Size**: `Ctrl-` (Windows/Linux) / `Cmd-` (Mac)
 
+### Search
+- **Open Search**: `/` or `Ctrl+F` (Windows/Linux) / `Cmd+F` (Mac)
+- **Next Match**: `F3`
+- **Previous Match**: `Shift+F3`
+- **Toggle Case Sensitivity**: `Ctrl+Shift+F` (Windows/Linux) / `Cmd+Shift+F` (Mac)
+- **Close Search**: `Esc`
+
 ### Theme Controls
 - **Cycle Palette**: `Ctrl+Shift+L` (Windows/Linux) / `Cmd+Shift+L` (Mac)
 - **Cycle Theme**: `Ctrl+Shift+T` (Windows/Linux) / `Cmd+Shift+T` (Mac)
 
 ### Navigation
-- **Close TOC**: `Esc` (when TOC is open)
+- **Close TOC or Search**: `Esc`
 
 Security notes:
 
