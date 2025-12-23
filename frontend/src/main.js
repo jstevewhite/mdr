@@ -672,6 +672,7 @@ themeEl.addEventListener('change', async () => {
     console.error(err);
   }
   await rerender();
+  themeEl.blur();
 });
 
 paletteEl.addEventListener('change', async () => {
@@ -682,6 +683,7 @@ paletteEl.addEventListener('change', async () => {
   }
   updateTOCTheme();
   await rerender();
+  paletteEl.blur();
 });
 
 autoReloadEl.addEventListener('change', async () => {
@@ -757,25 +759,25 @@ searchCaseSensitiveEl.addEventListener('change', async () => {
 recentFilesEl.addEventListener('change', async () => {
   const path = recentFilesEl.value;
   if (!path) return;
-  
+
   try {
     const theme = themeEl.value;
     const palette = paletteEl.value;
     const res = await RenderFileWithPaletteAndTOC(path, theme, palette);
-    
+
     currentPath = path;
     pathEl.textContent = path;
-    
+
     requestAnimationFrame(() => {
       setPreview(res.html, res.charCount, res.wordCount);
       renderTOC(res.toc);
       updateTOCTheme();
     });
-    
+
     // Update recent files (move to top, refresh dropdown)
     await AddRecentFile(path);
     await loadRecentFiles();
-    
+
     // Start watching if auto-reload enabled
     if (autoReloadEnabled && currentPath) {
       try {
@@ -784,15 +786,23 @@ recentFilesEl.addEventListener('change', async () => {
         console.error('Failed to start watching file:', err);
       }
     }
-    
+
     // Reset dropdown to first option
     recentFilesEl.value = '';
-    
+
+    // Remove focus from dropdown so keyboard shortcuts work
+    recentFilesEl.blur();
+
     setStatus('info', `Opened: ${path.split('/').pop()}`);
   } catch (err) {
     console.error(err);
     setStatus('error', formatError(err));
   }
+});
+
+// Always reset dropdown when it loses focus (even if no file was selected)
+recentFilesEl.addEventListener('blur', () => {
+  recentFilesEl.value = '';
 });
 
 async function renderInitialArgs() {
@@ -924,6 +934,13 @@ updateFontUI();
 setControlsEnabled(false);
 renderInitialArgs();
 
+// Ensure no controls have focus on startup to prevent blocking keyboard shortcuts
+setTimeout(() => {
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
+}, 100);
+
 // Add keyboard shortcuts event listener
 document.addEventListener('keydown', handleKeyboardShortcuts);
 
@@ -964,18 +981,25 @@ async function cycleTheme() {
 }
 
 function handleKeyboardShortcuts(e) {
-    // Check if we're focused on an input element (let browser handle those)
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-        // Allow Escape in search input to close search
+    const isInput = e.target.tagName === 'INPUT';
+    const isSelect = e.target.tagName === 'SELECT';
+
+    // For INPUT elements, only handle Escape (and let search input handle its own)
+    if (isInput) {
         if (e.target.id === 'searchInput' && e.key === 'Escape') {
-            // Let the search input handler handle this
-            return;
+            return; // Let the search input handler handle this
         }
-        return;
+        return; // Let browser handle normal typing in inputs
     }
 
-    // Search functionality - NEW
-    else if (e.key === '/' && !e[modifierKey] && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+    // For SELECT elements, blur and allow global shortcuts to work
+    if (isSelect) {
+        // Blur the select so future shortcuts work without needing this check
+        e.target.blur();
+    }
+
+    // Search functionality
+    if (e.key === '/' && !e[modifierKey] && !e.shiftKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         openSearch();
         setStatus('info', 'Search opened (/)');
