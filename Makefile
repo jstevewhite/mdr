@@ -3,37 +3,46 @@ WAILS=$(shell go env GOPATH)/bin/wails
 # Detect the operating system
 UNAME_S := $(shell uname -s)
 
-.PHONY: build run dev clean install install_themes
+.PHONY: all mdr mde build run dev dev-mdr dev-mde clean install install_themes
 
-# Universal build target - automatically detects OS
-build:
+# Build all targets
+all: mdr
+
+# Build just mdr
+mdr:
+	@mkdir -p build/bin
 ifeq ($(UNAME_S),Darwin)
-	@echo "Building for macOS..."
-	$(WAILS) build
+	@echo "Building mdr for macOS..."
+	cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr
 else ifeq ($(UNAME_S),Linux)
-	@echo "Building for Linux..."
+	@echo "Building mdr for Linux..."
 	@if pkg-config --exists webkit2gtk-4.0; then \
 		echo "Building with WebKit 4.0..."; \
-		$(WAILS) build; \
+		cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr; \
 	elif pkg-config --exists webkit2gtk-4.1; then \
 		echo "Building with WebKit 4.1..."; \
-		$(WAILS) build -tags webkit2_41; \
+		cd cmd/mdr && $(WAILS) build -tags webkit2_41 -o ../../build/bin/mdr; \
 	else \
 		echo "Error: Neither webkit2gtk-4.0 nor webkit2gtk-4.1 found."; \
 		echo "Please install libwebkit2gtk-4.1-dev or libwebkit2gtk-4.0-dev."; \
 		exit 1; \
 	fi
 else ifeq ($(UNAME_S),MINGW64_NT)
-	@echo "Building for Windows..."
-	$(WAILS) build
+	@echo "Building mdr for Windows..."
+	cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr.exe
 else
 	@echo "Unsupported platform: $(UNAME_S)"
 	@exit 1
 endif
 
-# Development mode - runs wails dev
-dev:
-	$(WAILS) dev
+# Alias for backward compatibility
+build: mdr
+
+# Development mode - runs wails dev for mdr
+dev: dev-mdr
+
+dev-mdr:
+	cd cmd/mdr && $(WAILS) dev
 
 # Run the built application
 run:
@@ -80,4 +89,5 @@ install_themes:
 # Clean build artifacts
 clean:
 	rm -rf build/bin
-	rm -rf frontend/dist
+	rm -rf cmd/mdr/build cmd/mdr/frontend/dist
+	rm -rf cmd/mde/build cmd/mde/frontend/dist
