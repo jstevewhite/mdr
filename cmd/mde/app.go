@@ -217,12 +217,17 @@ func (a *App) OpenInPreview() error {
 	return nil
 }
 
-// GetTheme returns the current theme
+// GetTheme returns the current editor theme
 func (a *App) GetTheme() string {
-	return config.GetTheme()
+	theme := config.GetTheme()
+	// Default to a basic theme if not set or if it's an mdr theme
+	if theme == "" || theme == "default" {
+		return "default"
+	}
+	return theme
 }
 
-// SetTheme sets the theme
+// SetTheme sets the editor theme
 func (a *App) SetTheme(theme string) error {
 	return config.SetTheme(theme)
 }
@@ -247,31 +252,16 @@ func (a *App) SetFontScale(scale int) error {
 	return config.SetFontScale(scale)
 }
 
-// ListThemes returns available themes
-func (a *App) ListThemes() ([]string, error) {
-	items := []string{"default"}
-
-	dir, err := config.ThemesDir()
-	if err != nil {
-		return items, nil
+// ListThemes returns available CodeMirror editor themes
+func (a *App) ListThemes() []string {
+	return []string{
+		"default",
+		"github-light",
+		"github-dark",
+		"monokai",
+		"dracula",
+		"nord",
+		"solarized-light",
+		"solarized-dark",
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return items, nil
-	}
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		name := e.Name()
-		if !strings.HasSuffix(strings.ToLower(name), ".css") {
-			continue
-		}
-		name = strings.TrimSuffix(name, ".css")
-		if name == "" {
-			continue
-		}
-		items = append(items, name)
-	}
-	return items, nil
 }

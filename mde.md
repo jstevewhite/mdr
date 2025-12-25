@@ -1,6 +1,6 @@
 # MDE Implementation Plan
 
-**Markdown Editor (mde) - Companion to MDR**
+**Markdown Editor (mde) - Companion to MDR** 
 
 ## Overview
 

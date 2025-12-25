@@ -1,76 +1,23 @@
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Compartment } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { keymap } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { searchKeymap } from '@codemirror/search'
+import { themes } from './themes.js'
 
-// Theme that uses mdr's CSS variables
-const mdrTheme = EditorView.theme({
-    "&": {
-        height: "100%",
-        backgroundColor: "var(--bg-color, #1e1e1e)",
-        color: "var(--text-color, #d4d4d4)",
-    },
-    ".cm-content": {
-        caretColor: "var(--accent-color, #569cd6)",
-        fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-    },
-    ".cm-cursor": {
-        borderLeftColor: "var(--accent-color, #569cd6)",
-    },
-    ".cm-selectionBackground, ::selection": {
-        backgroundColor: "var(--selection-bg, rgba(128, 203, 196, 0.2))",
-    },
-    "&.cm-focused .cm-selectionBackground": {
-        backgroundColor: "var(--selection-bg, rgba(128, 203, 196, 0.3))",
-    },
-    ".cm-activeLine": {
-        backgroundColor: "var(--active-line-bg, rgba(128, 128, 128, 0.1))",
-    },
-    ".cm-gutters": {
-        backgroundColor: "var(--code-bg, #252526)",
-        color: "var(--text-color-muted, #858585)",
-        border: "none",
-    },
-    ".cm-activeLineGutter": {
-        backgroundColor: "var(--active-line-bg, rgba(128, 128, 128, 0.1))",
-    },
-    // Markdown syntax highlighting
-    ".cm-header": {
-        color: "var(--accent-color, #569cd6)",
-        fontWeight: "bold",
-    },
-    ".cm-strong": {
-        fontWeight: "bold",
-    },
-    ".cm-em": {
-        fontStyle: "italic",
-    },
-    ".cm-link": {
-        color: "var(--link-color, #4fc1ff)",
-        textDecoration: "underline",
-    },
-    ".cm-monospace": {
-        backgroundColor: "var(--code-bg, #252526)",
-        color: "var(--code-color, #ce9178)",
-        fontFamily: "inherit",
-        padding: "2px 4px",
-        borderRadius: "3px",
-    },
-    ".cm-quote": {
-        color: "var(--quote-color, #6a9955)",
-        fontStyle: "italic",
-    },
-}, { dark: true })
+// Theme compartment for dynamic theme switching
+const themeCompartment = new Compartment()
 
-export function createEditor(parent, content = '', callbacks = {}) {
+export function createEditor(parent, content = '', callbacks = {}, themeName = 'default') {
+    const theme = themes[themeName] || themes['default']
+
     const state = EditorState.create({
         doc: content,
         extensions: [
             basicSetup,
             markdown(),
-            mdrTheme,
+            themeCompartment.of(theme),
             history(),
             keymap.of([
                 ...defaultKeymap,
@@ -100,6 +47,13 @@ export function createEditor(parent, content = '', callbacks = {}) {
     })
 
     return view
+}
+
+export function setTheme(view, themeName) {
+    const theme = themes[themeName] || themes['default']
+    view.dispatch({
+        effects: themeCompartment.reconfigure(theme)
+    })
 }
 
 export function setEditorContent(view, content) {

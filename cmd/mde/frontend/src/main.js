@@ -6,7 +6,8 @@ import {
     getEditorContent,
     insertAtCursor,
     wrapSelection,
-    setFontScale
+    setFontScale,
+    setTheme
 } from './editor.js'
 
 let editorView
@@ -16,12 +17,20 @@ let fontScale = 100
 
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
-    // Create editor
+    // Load initial theme
+    let initialTheme = 'default'
+    try {
+        initialTheme = await window.go.main.App.GetTheme()
+    } catch (err) {
+        console.error('Failed to get initial theme:', err)
+    }
+
+    // Create editor with theme
     const container = document.getElementById('editor-container')
     editorView = createEditor(container, '', {
         onChange: handleContentChange,
         onCursorChange: updateCursorPosition
-    })
+    }, initialTheme)
 
     // Load settings
     await loadSettings()
@@ -176,7 +185,9 @@ async function openPreview() {
 
 async function changeTheme(e) {
     try {
-        await window.go.main.App.SetTheme(e.target.value)
+        const themeName = e.target.value
+        await window.go.main.App.SetTheme(themeName)
+        setTheme(editorView, themeName)
     } catch (err) {
         console.error('Failed to change theme:', err)
     }
