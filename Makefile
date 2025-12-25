@@ -3,7 +3,7 @@ WAILS=$(shell go env GOPATH)/bin/wails
 # Detect the operating system
 UNAME_S := $(shell uname -s)
 
-.PHONY: all mdr mde build run dev dev-mdr dev-mde clean install install_themes
+.PHONY: all mdr mde build run dev dev-mdr dev-mde clean install install-mdr install-mde install_themes
 
 # Build all targets
 all: mdr mde
@@ -85,25 +85,48 @@ else ifeq ($(UNAME_S),MINGW64_NT)
 endif
 
 # Install the application based on OS
-# Install the application based on OS
-install:
+install: install-mdr install-mde
+
+install-mdr: mdr
 ifeq ($(UNAME_S),Darwin)
-	@echo "Installing for macOS..."
+	@echo "Installing mdr for macOS..."
 	@mkdir -p ~/Applications
-	@cp -r build/bin/mdr.app ~/Applications/
+	@cp -r cmd/mdr/build/bin/mdr.app ~/Applications/
 	@echo "Installed mdr.app to ~/Applications/"
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
 	@echo "Linked mdr binary to ~/bin/mdr"
 	$(MAKE) install_themes
 else ifeq ($(UNAME_S),Linux)
-	@echo "Installing for Linux..."
+	@echo "Installing mdr for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
 	@chmod +x /usr/local/bin/mdr
 	@echo "Installed mdr binary to /usr/local/bin/"
 	@echo "Note: Run 'make install_themes' as your normal user to install themes."
 else ifeq ($(UNAME_S),MINGW64_NT)
-	@echo "Installing for Windows..."
+	@echo "Installing mdr for Windows..."
+	@echo "Windows installation not yet implemented"
+else
+	@echo "Unsupported platform for installation: $(UNAME_S)"
+	@exit 1
+endif
+
+install-mde: mde
+ifeq ($(UNAME_S),Darwin)
+	@echo "Installing mde for macOS..."
+	@mkdir -p ~/Applications
+	@cp -r cmd/mde/build/bin/mde.app ~/Applications/
+	@echo "Installed mde.app to ~/Applications/"
+	@mkdir -p ~/bin
+	@ln -sf "$$HOME/Applications/mde.app/Contents/MacOS/mde" "$$HOME/bin/mde"
+	@echo "Linked mde binary to ~/bin/mde"
+else ifeq ($(UNAME_S),Linux)
+	@echo "Installing mde for Linux..."
+	@cp build/bin/mde /usr/local/bin/
+	@chmod +x /usr/local/bin/mde
+	@echo "Installed mde binary to /usr/local/bin/"
+else ifeq ($(UNAME_S),MINGW64_NT)
+	@echo "Installing mde for Windows..."
 	@echo "Windows installation not yet implemented"
 else
 	@echo "Unsupported platform for installation: $(UNAME_S)"

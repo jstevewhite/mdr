@@ -9,38 +9,130 @@
     <div id="app">
         <!-- Header toolbar -->
         <div class="toolbar">
-            <div class="toolbar-left">
-                <button id="btn-open" title="Open File (Ctrl+O)">📂 Open</button>
-                <button id="btn-save" title="Save (Ctrl+S)">💾 Save</button>
-                <button id="btn-preview" title="Preview in MDR (Ctrl+P)">👁️ Preview</button>
+            <div class="brand">mde</div>
+
+            <div class="toolbar-left" aria-label="File">
+                <button id="btn-open" class="btn icon-btn" title="Open File (Ctrl+O)" aria-label="Open">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <path d="M1.75 3A1.75 1.75 0 0 0 0 4.75v6.5C0 12.216.784 13 1.75 13h12.5A1.75 1.75 0 0 0 16 11.25V6.5A1.5 1.5 0 0 0 14.5 5H7.5a.5.5 0 0 1-.4-.2l-.9-1.2A1.5 1.5 0 0 0 5.2 3H1.75Z"/>
+                    </svg>
+                </button>
+                <button id="btn-save" class="btn icon-btn" title="Save (Ctrl+S)" aria-label="Save">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <path d="M2 1.75C2 1.336 2.336 1 2.75 1h8.086c.199 0 .39.079.53.22l1.414 1.414c.141.14.22.331.22.53V14.25c0 .414-.336.75-.75.75h-9.5A.75.75 0 0 1 2 14.25V1.75Zm1.5.75v11h8V4.06L10.44 2.5H3.5Zm1 1.5h4.5v2H4.5V4Zm0 5h7v4h-7V9Zm1 1v2h5v-2h-5Z"/>
+                    </svg>
+                </button>
+                <button id="btn-preview" class="btn icon-btn" title="Open Preview in mdr (Ctrl+P)" aria-label="Preview">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <path d="M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8Zm7 3c1.657 0 3-1.343 3-3S9.657 5 8 5 5 6.343 5 8s1.343 3 3 3Zm0-1.5A1.5 1.5 0 1 1 8 6.5a1.5 1.5 0 0 1 0 3Z"/>
+                    </svg>
+                </button>
             </div>
 
-            <div class="toolbar-center">
-                <!-- Formatting buttons -->
-                <button id="btn-h1" title="Heading 1"># H1</button>
-                <button id="btn-h2" title="Heading 2">## H2</button>
-                <button id="btn-h3" title="Heading 3">### H3</button>
-                <span class="separator">|</span>
-                <button id="btn-bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
-                <button id="btn-italic" title="Italic (Ctrl+I)"><em>I</em></button>
-                <button id="btn-code" title="Code (Ctrl+`)">` Code</button>
-                <span class="separator">|</span>
-                <button id="btn-list" title="Bullet List">• List</button>
-                <button id="btn-numlist" title="Numbered List">1. List</button>
-                <button id="btn-quote" title="Blockquote">&gt; Quote</button>
-                <span class="separator">|</span>
-                <button id="btn-link" title="Link (Ctrl+K)">🔗 Link</button>
+            <div class="toolbar-center" aria-label="Formatting">
+                <button id="btn-h1" class="btn icon-btn" title="Heading 1" aria-label="Heading 1">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M2.5 3.5v9M7.5 3.5v9M2.5 8h5"/>
+                        <path d="M11 6.5h3M12.5 6.5v6M11 12.5h3"/>
+                    </svg>
+                </button>
+                <button id="btn-h2" class="btn icon-btn" title="Heading 2" aria-label="Heading 2">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M2.5 3.5v9M7.5 3.5v9M2.5 8h5"/>
+                        <path d="M10.75 7c0-1 .75-1.5 1.75-1.5S14.25 6 14.25 7c0 1-1.25 1.5-2.5 2.75h2.75"/>
+                        <path d="M10.75 12.5h3.5"/>
+                    </svg>
+                </button>
+                <button id="btn-h3" class="btn icon-btn" title="Heading 3" aria-label="Heading 3">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M2.5 3.5v9M7.5 3.5v9M2.5 8h5"/>
+                        <path d="M11 6c.4-.35.9-.5 1.5-.5 1 0 1.75.5 1.75 1.5 0 .7-.4 1.1-1 1.3.7.2 1 .7 1 1.4 0 1-.75 1.5-1.75 1.5-.6 0-1.1-.15-1.5-.5"/>
+                    </svg>
+                </button>
+
+                <span class="separator" aria-hidden="true"></span>
+
+                <button id="btn-bold" class="btn icon-btn" title="Bold (Ctrl+B)" aria-label="Bold">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M5 2.5h3.5a2 2 0 0 1 0 4H5V2.5Z"/>
+                        <path d="M5 6.5h4a2.25 2.25 0 0 1 0 4.5H5V6.5Z"/>
+                    </svg>
+                </button>
+                <button id="btn-italic" class="btn icon-btn" title="Italic (Ctrl+I)" aria-label="Italic">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M7 2.5h5"/>
+                        <path d="M4 13.5h5"/>
+                        <path d="M10.5 2.5 5.5 13.5"/>
+                    </svg>
+                </button>
+                <button id="btn-code" class="btn icon-btn" title="Inline code (Ctrl+`)" aria-label="Code">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 5 3.5 8 6 11"/>
+                        <path d="M10 5 12.5 8 10 11"/>
+                    </svg>
+                </button>
+
+                <span class="separator" aria-hidden="true"></span>
+
+                <button id="btn-list" class="btn icon-btn" title="Bullet list" aria-label="Bullet list">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+                        <path d="M3 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 4h10v1H5V4Zm-2 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 8h10v1H5V8Zm-2 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 12h10v1H5v-1Z"/>
+                    </svg>
+                </button>
+                <button id="btn-numlist" class="btn icon-btn" title="Numbered list" aria-label="Numbered list">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M6 4h9"/>
+                        <path d="M6 8h9"/>
+                        <path d="M6 12h9"/>
+                        <path d="M1.75 4h1.5"/>
+                        <path d="M2.5 4v2"/>
+                        <path d="M1.75 8.5c.3-.5.8-.75 1.25-.75.8 0 1.25.4 1.25 1 0 .8-.9 1.2-2.5 2.25h2.5"/>
+                        <path d="M1.75 12c.35-.3.75-.45 1.25-.45.8 0 1.25.4 1.25.95 0 .45-.25.75-.65.9.5.15.8.5.8 1 0 .6-.5 1-1.4 1-.55 0-1-.15-1.25-.45"/>
+                    </svg>
+                </button>
+                <button id="btn-quote" class="btn icon-btn" title="Blockquote" aria-label="Blockquote">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 3.5H7"/>
+                        <path d="M4 12.5H12"/>
+                        <path d="M4 3.5v9"/>
+                        <path d="M7.5 6.25c.5-1.5 1.6-2.25 3-2.25"/>
+                        <path d="M10.5 4c0 2-2 2.5-2 4"/>
+                    </svg>
+                </button>
+
+                <span class="separator" aria-hidden="true"></span>
+
+                <button id="btn-link" class="btn icon-btn" title="Link (Ctrl+K)" aria-label="Link">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6.2 9.8 4.5 11.5a2.5 2.5 0 0 1-3.5-3.5L2.7 6.3a2.5 2.5 0 0 1 3.5 0"/>
+                        <path d="M9.8 6.2 11.5 4.5a2.5 2.5 0 0 1 3.5 3.5L13.3 9.7a2.5 2.5 0 0 1-3.5 0"/>
+                        <path d="M6.5 9.5l3-3"/>
+                    </svg>
+                </button>
             </div>
 
-            <div class="toolbar-right">
-                <select id="theme-select" title="Theme"></select>
-                <select id="palette-select" title="Color Palette">
+            <div class="toolbar-right" aria-label="View">
+                <select id="theme-select" class="select" title="Syntax theme"></select>
+                <select id="palette-select" class="select" title="Color palette">
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
                     <option value="theme">System</option>
                 </select>
-                <button id="font-decrease" title="Decrease Font">A-</button>
-                <button id="font-increase" title="Increase Font">A+</button>
+                <button id="font-decrease" class="btn icon-btn" title="Decrease font" aria-label="Decrease font">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 12.5 6.5 3.5h1L10 12.5"/>
+                        <path d="M5.1 9.5h3.8"/>
+                        <path d="M11.5 10.5h3"/>
+                    </svg>
+                </button>
+                <button id="font-increase" class="btn icon-btn" title="Increase font" aria-label="Increase font">
+                    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 12.5 6.5 3.5h1L10 12.5"/>
+                        <path d="M5.1 9.5h3.8"/>
+                        <path d="M13 9v5"/>
+                        <path d="M11.5 11.5h3"/>
+                    </svg>
+                </button>
             </div>
         </div>
 

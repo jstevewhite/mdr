@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jstevewhite/mdr/internal/config"
 	"github.com/jstevewhite/mdr/internal/files"
+	"github.com/jstevewhite/mdr/internal/mdeconfig"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -219,59 +219,36 @@ func (a *App) OpenInPreview() error {
 
 // GetTheme returns the current theme
 func (a *App) GetTheme() string {
-	return config.GetTheme()
+	return mdeconfig.GetTheme()
 }
 
-// SetTheme sets the theme
+// SetTheme sets the syntax theme
 func (a *App) SetTheme(theme string) error {
-	return config.SetTheme(theme)
+	return mdeconfig.SetTheme(theme)
 }
 
 // GetPalette returns the current palette
 func (a *App) GetPalette() string {
-	return config.GetPalette()
+	return mdeconfig.GetPalette()
 }
 
 // SetPalette sets the palette
 func (a *App) SetPalette(palette string) error {
-	return config.SetPalette(palette)
+	return mdeconfig.SetPalette(palette)
 }
 
 // GetFontScale returns the current font scale
 func (a *App) GetFontScale() int {
-	return config.GetFontScale()
+	return mdeconfig.GetFontScale()
 }
 
 // SetFontScale sets the font scale
 func (a *App) SetFontScale(scale int) error {
-	return config.SetFontScale(scale)
+	return mdeconfig.SetFontScale(scale)
 }
 
-// ListThemes returns available themes
+// ListThemes returns available syntax themes.
 func (a *App) ListThemes() ([]string, error) {
-	items := []string{"default"}
-
-	dir, err := config.ThemesDir()
-	if err != nil {
-		return items, nil
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return items, nil
-	}
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		name := e.Name()
-		if !strings.HasSuffix(strings.ToLower(name), ".css") {
-			continue
-		}
-		name = strings.TrimSuffix(name, ".css")
-		if name == "" {
-			continue
-		}
-		items = append(items, name)
-	}
-	return items, nil
+	// These must match the theme names supported by cmd/mde/frontend/src/editor.js
+	return []string{"default", "github", "monokai"}, nil
 }

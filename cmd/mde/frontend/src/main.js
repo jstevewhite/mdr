@@ -6,13 +6,16 @@ import {
     getEditorContent,
     insertAtCursor,
     wrapSelection,
-    setFontScale
+    setFontScale,
+    setTheme
 } from './editor.js'
 
 let editorView
 let currentPath = ''
 let isDirty = false
 let fontScale = 100
+let currentTheme = 'default'
+let currentPalette = 'dark'
 
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
@@ -65,14 +68,15 @@ async function openSpecificFile(path) {
 
 async function loadSettings() {
     try {
-        const theme = await window.go.main.App.GetTheme()
-        const palette = await window.go.main.App.GetPalette()
+        currentTheme = await window.go.main.App.GetTheme()
+        currentPalette = await window.go.main.App.GetPalette()
         fontScale = await window.go.main.App.GetFontScale()
 
-        document.getElementById('theme-select').value = theme
-        document.getElementById('palette-select').value = palette
-        document.body.className = `palette-${palette}`
+        document.getElementById('theme-select').value = currentTheme
+        document.getElementById('palette-select').value = currentPalette
+        document.body.className = `palette-${currentPalette}`
         setFontScale(editorView, fontScale)
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to load settings:', err)
     }
@@ -87,7 +91,9 @@ async function loadThemes() {
         ).join('')
 
         const current = await window.go.main.App.GetTheme()
-        select.value = current
+        currentTheme = current || 'default'
+        select.value = currentTheme
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to load themes:', err)
     }
@@ -176,7 +182,9 @@ async function openPreview() {
 
 async function changeTheme(e) {
     try {
-        await window.go.main.App.SetTheme(e.target.value)
+        currentTheme = e.target.value || 'default'
+        await window.go.main.App.SetTheme(currentTheme)
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to change theme:', err)
     }
@@ -184,8 +192,10 @@ async function changeTheme(e) {
 
 async function changePalette(e) {
     try {
-        await window.go.main.App.SetPalette(e.target.value)
-        document.body.className = `palette-${e.target.value}`
+        currentPalette = e.target.value || 'dark'
+        await window.go.main.App.SetPalette(currentPalette)
+        document.body.className = `palette-${currentPalette}`
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to change palette:', err)
     }
