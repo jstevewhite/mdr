@@ -19,6 +19,9 @@
 /cmd/*/build/bin
 /cmd/*/frontend/node_modules
 /cmd/*/frontend/node_modules/**
+/cmd/*/frontend/dist
+/cmd/*/frontend/dist/**
+!/cmd/*/frontend/dist/placeholder.txt
 /frontend/dist
 /frontend/node_modules
 /node_modules

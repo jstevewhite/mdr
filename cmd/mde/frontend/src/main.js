@@ -159,7 +159,17 @@ async function openFile() {
 async function saveFile() {
     try {
         const content = getEditorContent(editorView)
-        await window.go.main.App.SaveFile(content)
+
+        // If we don't have a path yet, treat Save as Save As.
+        const path = await window.go.main.App.GetCurrentPath()
+        if (!path) {
+            await window.go.main.App.SaveFileAs(content)
+            currentPath = await window.go.main.App.GetCurrentPath()
+            updateStatusFile()
+        } else {
+            await window.go.main.App.SaveFile(content)
+        }
+
         setDirty(false)
     } catch (err) {
         console.error('Failed to save file:', err)

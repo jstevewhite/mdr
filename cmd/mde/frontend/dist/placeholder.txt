@@ -1,0 +1,3 @@
+placeholder
+This file exists so Go //go:embed patterns have at least one match before the frontend build runs.
+The real Vite build output will populate this directory.
