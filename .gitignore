@@ -17,8 +17,9 @@
 ### Wails
 /build/bin
 /frontend/dist
-/frontend/node_modules
-/node_modules
+**/node_modules
+**/frontend/dist
+node_modules
 
 ### OS
 .DS_Store
