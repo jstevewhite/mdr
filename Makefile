@@ -91,16 +91,20 @@ ifeq ($(UNAME_S),Darwin)
 	@echo "Installing for macOS..."
 	@mkdir -p ~/Applications
 	@cp -r build/bin/mdr.app ~/Applications/
-	@echo "Installed mdr.app to ~/Applications/"
+	@cp -r build/bin/mde.app ~/Applications/
+	@echo "Installed mdr.app and mde.app to ~/Applications/"
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
-	@echo "Linked mdr binary to ~/bin/mdr"
+	@ln -sf "$$HOME/Applications/mde.app/Contents/MacOS/mde" "$$HOME/bin/mde"
+	@echo "Linked mdr and mde binaries to ~/bin/"
 	$(MAKE) install_themes
 else ifeq ($(UNAME_S),Linux)
 	@echo "Installing for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
+	@cp build/bin/mde /usr/local/bin/
 	@chmod +x /usr/local/bin/mdr
-	@echo "Installed mdr binary to /usr/local/bin/"
+	@chmod +x /usr/local/bin/mde
+	@echo "Installed mdr and mde binaries to /usr/local/bin/"
 	@echo "Note: Run 'make install_themes' as your normal user to install themes."
 else ifeq ($(UNAME_S),MINGW64_NT)
 	@echo "Installing for Windows..."
