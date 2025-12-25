@@ -10,11 +10,22 @@ import {
     setTheme
 } from './editor.js'
 
-// Defensive: ensure this module only initialises once (guards against accidental double-inclusion)
-if (window.__mde_initialized) {
-    console.warn('mde already initialised; skipping duplicate init')
-} else {
-    window.__mde_initialized = true
+// Defensive: handle accidental duplicate inclusion (e.g. both dev + built assets wired)
+window.__mde_initialized = window.__mde_initialized || 0
+window.__mde_initialized += 1
+
+// Ensure init + dialogs are guarded *globally* (so it works even if this file is evaluated twice)
+window.__mde_booted = window.__mde_booted || false
+window.__mde_dialog_busy = window.__mde_dialog_busy || false
+
+function dialogTryLock() {
+    if (window.__mde_dialog_busy) return false
+    window.__mde_dialog_busy = true
+    return true
+}
+
+function dialogUnlock() {
+    window.__mde_dialog_busy = false
 }
 
 let editorView
@@ -24,14 +35,14 @@ let fontScale = 100
 let currentTheme = 'default'
 let currentPalette = 'dark'
 
-let dialogBusy = false
-
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
-    if (!window.__mde_initialized) {
-        // Shouldn't happen, but avoid partial init.
+    // If this script is loaded twice, only the first instance should wire UI events.
+    if (window.__mde_booted) {
+        console.warn('mde already booted; skipping duplicate DOMContentLoaded init')
         return
     }
+    window.__mde_booted = true
 
     // Create editor
     const container = document.getElementById('editor-container')
@@ -157,8 +168,7 @@ function setupKeyboardShortcuts() {
 }
 
 async function openFile() {
-    if (dialogBusy) return
-    dialogBusy = true
+    if (!dialogTryLock()) return
     try {
         const content = await window.go.main.App.OpenFile()
         if (content !== null && content !== undefined) {
@@ -170,13 +180,12 @@ async function openFile() {
     } catch (err) {
         console.error('Failed to open file:', err)
     } finally {
-        dialogBusy = false
+        dialogUnlock()
     }
 }
 
 async function saveFile() {
-    if (dialogBusy) return
-    dialogBusy = true
+    if (!dialogTryLock()) return
     try {
         const content = getEditorContent(editorView)
 
@@ -195,29 +204,24 @@ async function saveFile() {
         console.error('Failed to save file:', err)
         alert('Failed to save file: ' + err)
     } finally {
-        dialogBusy = false
+        dialogUnlock()
     }
 }
 
 async function openPreview() {
-    if (dialogBusy) return
-
+    // Preview can call saveFile() first; don't take the lock until we actually launch preview.
     try {
-        // Save first if dirty
         if (isDirty) {
             await saveFile()
         }
 
-        // saveFile() may have been cancelled; don't proceed if a dialog is still in progress.
-        if (dialogBusy) return
-
-        dialogBusy = true
+        if (!dialogTryLock()) return
         await window.go.main.App.OpenInPreview()
     } catch (err) {
         console.error('Failed to open preview:', err)
         alert('Failed to open preview. Make sure MDR is installed.')
     } finally {
-        dialogBusy = false
+        dialogUnlock()
     }
 }
 
