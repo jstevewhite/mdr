@@ -13,6 +13,7 @@ This document contains potential feature additions for the mdr (Markdown Reader)
 - Comprehensive keyboard shortcuts
 - Auto-reload with file watching
 - Search functionality (recently added)
+- Recent files list (recently added)
 - HTML sanitization with security features
 - Cross-platform support (macOS, Linux, Windows)
 
@@ -62,8 +63,8 @@ Since mdr is specifically a **reader-only** application (not an editor), here ar
 
 ### 📚 **Document Management**
 
-6. **Recent Files & Favorites**
-   - Recently opened files list
+6. **Recent Files & Favorites** (implemented)
+   - Recently opened files list (implemented)
    - Bookmarks/favorites for frequently accessed documents
    - Document tags for organization
    - Quick access panel

@@ -149,6 +149,13 @@ type RecentFile struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
+// ReadingProgress represents the reading progress for a file
+type ReadingProgress struct {
+	Path         string `json:"path"`
+	ScrollPosition int   `json:"scrollPosition"`
+	LastReadTime  int64 `json:"lastReadTime"`
+}
+
 func (a *App) RenderMarkdown(markdown string, theme string) (string, error) {
 	return RenderMarkdownToHTMLDocument(markdown, theme, getPaletteFromConfig(), getFontScaleFromConfig())
 }
@@ -715,4 +722,26 @@ func (a *App) AddRecentFile(path string) error {
 // ClearRecentFiles clears the recent files list
 func (a *App) ClearRecentFiles() error {
 	return clearRecentFiles()
+}
+
+// GetReadingProgress returns the reading progress for a specific file
+func (a *App) GetReadingProgress(path string) (int, error) {
+	path = normalizePath(path)
+	if path == "" {
+		return 0, nil
+	}
+	progress := getReadingProgressFromConfig()
+	if p, ok := progress[path]; ok {
+		return p.ScrollPosition, nil
+	}
+	return 0, nil
+}
+
+// SetReadingProgress saves the reading progress for a file
+func (a *App) SetReadingProgress(path string, scrollPosition int) error {
+	path = normalizePath(path)
+	if path == "" {
+		return nil
+	}
+	return setReadingProgressInConfig(path, scrollPosition)
 }

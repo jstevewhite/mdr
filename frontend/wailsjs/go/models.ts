@@ -14,6 +14,22 @@ export namespace main {
 	        this.timestamp = source["timestamp"];
 	    }
 	}
+	export class ReadingProgress {
+	    path: string;
+	    scrollPosition: number;
+	    lastReadTime: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ReadingProgress(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.scrollPosition = source["scrollPosition"];
+	        this.lastReadTime = source["lastReadTime"];
+	    }
+	}
 	export class TOCItem {
 	    id: string;
 	    text: string;

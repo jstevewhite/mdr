@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive, GetRecentFiles, AddRecentFile, ClearRecentFiles } from '../wailsjs/go/main/App';
+import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive, GetRecentFiles, AddRecentFile, ClearRecentFiles, GetReadingProgress, SetReadingProgress } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
@@ -55,6 +55,12 @@ document.querySelector('#app').innerHTML = `
       <iframe id="preview" class="preview"></iframe>
     </main>
     <footer class="status-bar">
+      <div class="progress-container">
+        <div id="progressBar" class="progress-bar">
+          <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <span id="progressPercent" class="progress-percent">0%</span>
+      </div>
       <div id="status" class="status">Ready</div>
     </footer>
   </div>
@@ -135,6 +141,10 @@ let searchDebounceTimer = null;
 
 // Recent files state
 let recentFiles = [];
+
+// Reading progress state
+let readingProgressSaveTimer = null;
+let isRestoringPosition = false;
 
 function setControlsEnabled(enabled) {
   const disabled = !enabled;

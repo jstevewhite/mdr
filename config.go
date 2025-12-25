@@ -469,3 +469,105 @@ func getRecentFilesMaxAgeDays() int {
 	}
 	return n
 }
+
+// Reading progress functions
+type ReadingProgressConfig struct {
+	Path         string
+	ScrollPosition int
+	LastReadTime  int64
+}
+
+func getReadingProgressFromConfig() map[string]ReadingProgressConfig {
+	cfg, err := readConfig()
+	if err != nil {
+		return map[string]ReadingProgressConfig{}
+	}
+
+	progressStr := strings.TrimSpace(cfg["readingProgress"])
+	if progressStr == "" {
+		return map[string]ReadingProgressConfig{}
+	}
+
+	progress := make(map[string]ReadingProgressConfig)
+	entries := strings.Split(progressStr, ",")
+	for _, entry := range entries {
+		parts := strings.Split(entry, "|")
+		if len(parts) == 3 {
+			path := strings.TrimSpace(parts[0])
+			scrollPosStr := strings.TrimSpace(parts[1])
+			timestampStr := strings.TrimSpace(parts[2])
+			if path != "" {
+				scrollPos, _ := strconv.Atoi(scrollPosStr)
+				timestamp, _ := strconv.ParseInt(timestampStr, 10, 64)
+				progress[path] = ReadingProgressConfig{
+					Path:          path,
+					ScrollPosition: scrollPos,
+					LastReadTime:   timestamp,
+				}
+			}
+		}
+	}
+	return progress
+}
+
+func setReadingProgressInConfig(path string, scrollPosition int) error {
+	path = normalizePath(path)
+	if path == "" {
+		return nil
+	}
+
+	cfg, err := readConfig()
+	if err != nil {
+		return err
+	}
+
+	progress := getReadingProgressFromConfig()
+	now := time.Now().Unix()
+
+	// Update or add progress for this file
+	progress[path] = ReadingProgressConfig{
+		Path:          path,
+		ScrollPosition: scrollPosition,
+		LastReadTime:   now,
+	}
+
+	// Clean up old entries (older than 90 days)
+	maxAge := int64(90 * 24 * 60 * 60) // 90 days in seconds
+	cleaned := make(map[string]ReadingProgressConfig)
+	for p, prog := range progress {
+		if now-prog.LastReadTime < maxAge {
+			cleaned[p] = prog
+		}
+	}
+
+	// Limit to 100 entries
+	if len(cleaned) > 100 {
+		type kv struct {
+			key   string
+			value ReadingProgressConfig
+		}
+		var sorted []kv
+		for k, v := range cleaned {
+			sorted = append(sorted, kv{k, v})
+		}
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].value.LastReadTime > sorted[j].value.LastReadTime
+		})
+		cleaned = make(map[string]ReadingProgressConfig)
+		for i, kv := range sorted {
+			if i >= 100 {
+				break
+			}
+			cleaned[kv.key] = kv.value
+		}
+	}
+
+	// Convert to string format
+	var entries []string
+	for _, prog := range cleaned {
+		entries = append(entries, prog.Path+"|"+strconv.Itoa(prog.ScrollPosition)+"|"+strconv.FormatInt(prog.LastReadTime, 10))
+	}
+
+	cfg["readingProgress"] = strings.Join(entries, ",")
+	return writeConfig(cfg)
+}
