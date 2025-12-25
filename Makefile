@@ -11,6 +11,8 @@ all: mdr mde
 # Build just mdr
 mdr:
 	@mkdir -p build/bin
+	@mkdir -p cmd/mdr/frontend/dist
+	@touch cmd/mdr/frontend/dist/.wails-embed-placeholder
 ifeq ($(UNAME_S),Darwin)
 	@echo "Building mdr for macOS..."
 	cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr
@@ -38,6 +40,8 @@ endif
 # Build just mde
 mde:
 	@mkdir -p build/bin
+	@mkdir -p cmd/mde/frontend/dist
+	@touch cmd/mde/frontend/dist/.wails-embed-placeholder
 ifeq ($(UNAME_S),Darwin)
 	@echo "Building mde for macOS..."
 	cd cmd/mde && $(WAILS) build -o ../../build/bin/mde

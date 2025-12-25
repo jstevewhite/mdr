@@ -10,6 +10,13 @@ import {
     setTheme
 } from './editor.js'
 
+// Defensive: ensure this module only initialises once (guards against accidental double-inclusion)
+if (window.__mde_initialized) {
+    console.warn('mde already initialised; skipping duplicate init')
+} else {
+    window.__mde_initialized = true
+}
+
 let editorView
 let currentPath = ''
 let isDirty = false
@@ -17,8 +24,15 @@ let fontScale = 100
 let currentTheme = 'default'
 let currentPalette = 'dark'
 
+let dialogBusy = false
+
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
+    if (!window.__mde_initialized) {
+        // Shouldn't happen, but avoid partial init.
+        return
+    }
+
     // Create editor
     const container = document.getElementById('editor-container')
     editorView = createEditor(container, '', {
@@ -143,6 +157,8 @@ function setupKeyboardShortcuts() {
 }
 
 async function openFile() {
+    if (dialogBusy) return
+    dialogBusy = true
     try {
         const content = await window.go.main.App.OpenFile()
         if (content !== null && content !== undefined) {
@@ -153,10 +169,14 @@ async function openFile() {
         }
     } catch (err) {
         console.error('Failed to open file:', err)
+    } finally {
+        dialogBusy = false
     }
 }
 
 async function saveFile() {
+    if (dialogBusy) return
+    dialogBusy = true
     try {
         const content = getEditorContent(editorView)
 
@@ -174,19 +194,30 @@ async function saveFile() {
     } catch (err) {
         console.error('Failed to save file:', err)
         alert('Failed to save file: ' + err)
+    } finally {
+        dialogBusy = false
     }
 }
 
 async function openPreview() {
+    if (dialogBusy) return
+
     try {
         // Save first if dirty
         if (isDirty) {
             await saveFile()
         }
+
+        // saveFile() may have been cancelled; don't proceed if a dialog is still in progress.
+        if (dialogBusy) return
+
+        dialogBusy = true
         await window.go.main.App.OpenInPreview()
     } catch (err) {
         console.error('Failed to open preview:', err)
         alert('Failed to open preview. Make sure MDR is installed.')
+    } finally {
+        dialogBusy = false
     }
 }
 
