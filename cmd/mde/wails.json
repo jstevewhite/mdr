@@ -1,0 +1,34 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "mde",
+  "outputfilename": "mde",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Steve White",
+    "email": "stwhite@mac.com"
+  },
+  "info": {
+    "companyName": "Steve White",
+    "productName": "mde",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024 Steve White",
+    "comments": "Markdown Editor",
+    "fileAssociations": [
+      {
+        "ext": "md",
+        "name": "Markdown Document",
+        "role": "Editor",
+        "iconName": "appicon"
+      },
+      {
+        "ext": "markdown",
+        "name": "Markdown Document",
+        "role": "Editor",
+        "iconName": "appicon"
+      }
+    ]
+  }
+}

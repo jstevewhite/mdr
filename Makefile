@@ -6,7 +6,7 @@ UNAME_S := $(shell uname -s)
 .PHONY: all mdr mde build run dev dev-mdr dev-mde clean install install_themes
 
 # Build all targets
-all: mdr
+all: mdr mde
 
 # Build just mdr
 mdr:
@@ -35,6 +35,33 @@ else
 	@exit 1
 endif
 
+# Build just mde
+mde:
+	@mkdir -p build/bin
+ifeq ($(UNAME_S),Darwin)
+	@echo "Building mde for macOS..."
+	cd cmd/mde && $(WAILS) build -o ../../build/bin/mde
+else ifeq ($(UNAME_S),Linux)
+	@echo "Building mde for Linux..."
+	@if pkg-config --exists webkit2gtk-4.0; then \
+		echo "Building with WebKit 4.0..."; \
+		cd cmd/mde && $(WAILS) build -o ../../build/bin/mde; \
+	elif pkg-config --exists webkit2gtk-4.1; then \
+		echo "Building with WebKit 4.1..."; \
+		cd cmd/mde && $(WAILS) build -tags webkit2_41 -o ../../build/bin/mde; \
+	else \
+		echo "Error: Neither webkit2gtk-4.0 nor webkit2gtk-4.1 found."; \
+		echo "Please install libwebkit2gtk-4.1-dev or libwebkit2gtk-4.0-dev."; \
+		exit 1; \
+	fi
+else ifeq ($(UNAME_S),MINGW64_NT)
+	@echo "Building mde for Windows..."
+	cd cmd/mde && $(WAILS) build -o ../../build/bin/mde.exe
+else
+	@echo "Unsupported platform: $(UNAME_S)"
+	@exit 1
+endif
+
 # Alias for backward compatibility
 build: mdr
 
@@ -43,6 +70,9 @@ dev: dev-mdr
 
 dev-mdr:
 	cd cmd/mdr && $(WAILS) dev
+
+dev-mde:
+	cd cmd/mde && $(WAILS) dev
 
 # Run the built application
 run:

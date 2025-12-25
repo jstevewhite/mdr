@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MDE - Markdown Editor</title>
+</head>
+<body>
+    <div id="app">
+        <!-- Header toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button id="btn-open" title="Open File (Ctrl+O)">📂 Open</button>
+                <button id="btn-save" title="Save (Ctrl+S)">💾 Save</button>
+                <button id="btn-preview" title="Preview in MDR (Ctrl+P)">👁️ Preview</button>
+            </div>
+
+            <div class="toolbar-center">
+                <!-- Formatting buttons -->
+                <button id="btn-h1" title="Heading 1"># H1</button>
+                <button id="btn-h2" title="Heading 2">## H2</button>
+                <button id="btn-h3" title="Heading 3">### H3</button>
+                <span class="separator">|</span>
+                <button id="btn-bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                <button id="btn-italic" title="Italic (Ctrl+I)"><em>I</em></button>
+                <button id="btn-code" title="Code (Ctrl+`)">` Code</button>
+                <span class="separator">|</span>
+                <button id="btn-list" title="Bullet List">• List</button>
+                <button id="btn-numlist" title="Numbered List">1. List</button>
+                <button id="btn-quote" title="Blockquote">&gt; Quote</button>
+                <span class="separator">|</span>
+                <button id="btn-link" title="Link (Ctrl+K)">🔗 Link</button>
+            </div>
+
+            <div class="toolbar-right">
+                <select id="theme-select" title="Theme"></select>
+                <select id="palette-select" title="Color Palette">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="theme">System</option>
+                </select>
+                <button id="font-decrease" title="Decrease Font">A-</button>
+                <button id="font-increase" title="Increase Font">A+</button>
+            </div>
+        </div>
+
+        <!-- Editor container -->
+        <div id="editor-container"></div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+            <div class="status-left">
+                <span id="status-file">No file open</span>
+                <span id="status-dirty" style="display:none;">●</span>
+            </div>
+            <div class="status-right">
+                <span id="status-position">Line 1, Col 1</span>
+                <span id="status-chars">0 characters</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
