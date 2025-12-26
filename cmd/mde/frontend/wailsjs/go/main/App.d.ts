@@ -15,6 +15,8 @@ export function IsDirty():Promise<boolean>;
 
 export function ListThemes():Promise<Array<string>>;
 
+export function LoadFile(arg1:string):Promise<string>;
+
 export function OpenFile():Promise<string>;
 
 export function OpenInPreview():Promise<void>;

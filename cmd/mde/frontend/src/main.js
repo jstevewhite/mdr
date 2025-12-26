@@ -79,8 +79,8 @@ async function checkLaunchArgs() {
 
 async function openSpecificFile(path) {
     try {
-        const content = await window.go.main.App.OpenFile()
-        if (content) {
+        const content = await window.go.main.App.LoadFile(path)
+        if (content !== null && content !== undefined) {
             setEditorContent(editorView, content)
             currentPath = await window.go.main.App.GetCurrentPath()
             updateStatusFile()

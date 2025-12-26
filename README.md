@@ -1,13 +1,20 @@
-# mdr
+# mdr / mde
 
-`mdr` is a cross-platform Markdown viewer built with Wails.
+A cross-platform Markdown viewer (`mdr`) and editor (`mde`) built with Wails.
 
-This application is largely the result of working with various AI (Gemini, Claude, GPT, Deepseek, and Qwen3-coder) and countless cycles of 'wait, not like that'. The architecture is mine, the code is mostly not, though I did have to jump in a few times and fix things. I wanted a simple application for rendering Markdown on my Mac and my Asus Ascent GX10, so those are the platforms it's been tested on. I don't have a Windows box, which is why it isn't tested, but the AIs assure me it should build and work if someone wants to try it. I tried to make it fast and light. 
+This application is largely the result of working with various AI (Gemini, Claude, GPT, Deepseek, and Qwen3-coder) and countless cycles of 'wait, not like that'. The architecture is mine, the code is mostly not, though I did have to jump in a few times and fix things. I wanted a simple application for rendering and editing Markdown on my Mac and my Asus Ascent GX10, so those are the platforms it's been tested on. I don't have a Windows box, which is why it isn't tested, but the AIs assure me it should build and work if someone wants to try it. I tried to make it fast and light.
 
-It reloads in realtime, so editing with sublime text and :w updates the preview. For me it's much more comfortable than the split-pane style that most implement, but since I mostly use vim/Sublime Text with VI keybindings, it works. It's also great for "Let me look at this README.md". 
+## mdr - Markdown Viewer
+
+`mdr` is a real-time Markdown viewer that reloads automatically when files change. It's perfect for viewing rendered Markdown alongside your favorite text editor. It's also great for quickly viewing any README.md file.
+
+## mde - Markdown Editor
+
+`mde` is a focused Markdown editor with syntax highlighting and live preview integration with `mdr`. Edit your Markdown with syntax coloring, then click Preview to see it rendered in `mdr`.
 
 ## Features
 
+### mdr (Viewer)
 - Open and render local Markdown files
 - Table of Contents sidebar with pin/toggle
 - Auto-reload for files and custom themes (works with atomic-save editors)
@@ -17,15 +24,28 @@ It reloads in realtime, so editing with sublime text and :w updates the preview.
 - Status bar for standardized info/errors
 - **Keyboard shortcuts** for common operations
 - **Mermaid diagram support** for flowcharts, sequence diagrams, and more
+- **Edit button** to open current file in mde
+- **Search functionality** with case-sensitive option
 
-Settings are stored in:
+### mde (Editor)
+- Syntax-highlighted Markdown editing with CodeMirror
+- Multiple syntax themes: default, github, monokai, dracula, nord, solarized-dark, solarized-light, onedark
+- Palette override: `light` / `dark`
+- Font size controls with persistence
+- **Preview button** to view rendered output in mdr
+- Markdown formatting toolbar (headings, bold, italic, lists, links, etc.)
+- Real-time character and cursor position display
+- Automatic file association handling
+- **Keyboard shortcuts** for common operations
 
-- `~/.config/mdr/mdr.conf`
-- `maxFileSizeMB` (default 5) guards against loading huge files.
+### Configuration
 
-Other settings:
-
+**mdr settings** are stored in `~/.config/mdr/mdr.conf`:
+- `maxFileSizeMB` (default 5) guards against loading huge files
 - `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
+
+**mde settings** are stored in `~/.config/mde/mde.conf`:
+- `palette`, `theme`, `fontScale`
 
 ## Mermaid Diagrams
 
@@ -55,23 +75,45 @@ See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax detail
 
 ## Keyboard Shortcuts
 
-### File Operations
+### mdr (Viewer)
+
+#### File Operations
 - **Open File**: `Ctrl+O` (Windows/Linux) / `Cmd+O` (Mac)
 - **Reload File**: `Ctrl+R` (Windows/Linux) / `Cmd+R` (Mac)
 
-### View Controls
+#### View Controls
 - **Toggle TOC**: `Ctrl+T` (Windows/Linux) / `Cmd+T` (Mac)
 - **Pin/Unpin TOC**: `Ctrl+P` (Windows/Linux) / `Cmd+P` (Mac)
 - **Reset Font Size**: `Ctrl+0` (Windows/Linux) / `Cmd+0` (Mac)
 - **Increase Font Size**: `Ctrl+` (Windows/Linux) / `Cmd+` (Mac)
 - **Decrease Font Size**: `Ctrl-` (Windows/Linux) / `Cmd-` (Mac)
 
-### Theme Controls
+#### Theme Controls
 - **Cycle Palette**: `Ctrl+Shift+L` (Windows/Linux) / `Cmd+Shift+L` (Mac)
 - **Cycle Theme**: `Ctrl+Shift+T` (Windows/Linux) / `Cmd+Shift+T` (Mac)
 
-### Navigation
+#### Search
+- **Open Search**: `/` or `Ctrl+F` (Windows/Linux) / `Cmd+F` (Mac)
+- **Next Match**: `F3`
+- **Previous Match**: `Shift+F3`
+- **Toggle Case Sensitive**: `Ctrl+Shift+F` (Windows/Linux) / `Cmd+Shift+F` (Mac)
+- **Close Search**: `Esc`
+
+#### Navigation
 - **Close TOC**: `Esc` (when TOC is open)
+
+### mde (Editor)
+
+#### File Operations
+- **Open File**: `Ctrl+O` (Windows/Linux) / `Cmd+O` (Mac)
+- **Save File**: `Ctrl+S` (Windows/Linux) / `Cmd+S` (Mac)
+- **Preview in mdr**: `Ctrl+P` (Windows/Linux) / `Cmd+P` (Mac)
+
+#### Formatting
+- **Bold**: `Ctrl+B` (Windows/Linux) / `Cmd+B` (Mac)
+- **Italic**: `Ctrl+I` (Windows/Linux) / `Cmd+I` (Mac)
+- **Insert Link**: `Ctrl+K` (Windows/Linux) / `Cmd+K` (Mac)
+- **Code**: `Ctrl+`` (Windows/Linux) / `Cmd+`` (Mac)
 
 Security notes:
 
@@ -84,14 +126,30 @@ Security notes:
 
 ## Building
 
-- `make build`
+Build both applications:
+```bash
+make mdr        # Build mdr viewer
+make mde        # Build mde editor
+make build      # Build both
+```
 
 ## Installation
 
 ### MacOS
 
-Run `make install` to build and install the application.
-- App installed to: `~/Applications/mdr.app`
+Run `make install` to build and install both applications:
+```bash
+make install    # Installs both mdr and mde
+```
+
+Or install individually:
+```bash
+make install-mdr    # Install mdr only
+make install-mde    # Install mde only
+```
+
+- Apps installed to: `~/Applications/mdr.app` and `~/Applications/mde.app`
+- Symlinks created: `~/bin/mdr` and `~/bin/mde`
 - Themes installed to: `~/.config/mdr/mdthemes/`
 
 ### Linux

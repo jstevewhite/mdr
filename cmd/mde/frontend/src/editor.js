@@ -106,6 +106,186 @@ function themeFor(name, palette) {
         }
     }
 
+    if (name === 'dracula') {
+        const style = HighlightStyle.define([
+            { tag: tags.heading, color: "#50fa7b", fontWeight: "bold" },
+            { tag: tags.strong, fontWeight: "bold" },
+            { tag: tags.emphasis, fontStyle: "italic" },
+            { tag: tags.link, color: "#8be9fd", textDecoration: "underline" },
+            { tag: tags.keyword, color: "#ff79c6" },
+            { tag: tags.string, color: "#f1fa8c" },
+            { tag: tags.comment, color: "#6272a4", fontStyle: "italic" },
+            { tag: tags.atom, color: "#bd93f9" },
+            { tag: tags.number, color: "#bd93f9" },
+            { tag: tags.bool, color: "#bd93f9" },
+            { tag: tags.variableName, color: "#f8f8f2" },
+            { tag: tags.function(tags.variableName), color: "#50fa7b" },
+            { tag: tags.typeName, color: "#8be9fd" },
+            { tag: tags.punctuation, color: "#f8f8f2" },
+        ])
+        const draculaBase = {
+            ...base,
+            "&": {
+                ...base["&"],
+                backgroundColor: "#282a36",
+                color: "#f8f8f2",
+            },
+            ".cm-gutters": {
+                ...base[".cm-gutters"],
+                backgroundColor: "#21222c",
+                color: "#6272a4",
+            },
+        }
+        return {
+            theme: EditorView.theme(draculaBase, { dark: true }),
+            highlight: syntaxHighlighting(style, { fallback: true }),
+        }
+    }
+
+    if (name === 'nord') {
+        const style = HighlightStyle.define([
+            { tag: tags.heading, color: "#88c0d0", fontWeight: "bold" },
+            { tag: tags.strong, fontWeight: "bold" },
+            { tag: tags.emphasis, fontStyle: "italic" },
+            { tag: tags.link, color: "#88c0d0", textDecoration: "underline" },
+            { tag: tags.keyword, color: "#81a1c1" },
+            { tag: tags.string, color: "#a3be8c" },
+            { tag: tags.comment, color: "#616e88", fontStyle: "italic" },
+            { tag: tags.atom, color: "#b48ead" },
+            { tag: tags.number, color: "#b48ead" },
+            { tag: tags.bool, color: "#81a1c1" },
+            { tag: tags.variableName, color: "#d8dee9" },
+            { tag: tags.function(tags.variableName), color: "#88c0d0" },
+            { tag: tags.typeName, color: "#8fbcbb" },
+            { tag: tags.punctuation, color: "#d8dee9" },
+        ])
+        const nordBase = {
+            ...base,
+            "&": {
+                ...base["&"],
+                backgroundColor: "#2e3440",
+                color: "#d8dee9",
+            },
+            ".cm-gutters": {
+                ...base[".cm-gutters"],
+                backgroundColor: "#3b4252",
+                color: "#616e88",
+            },
+        }
+        return {
+            theme: EditorView.theme(nordBase, { dark: true }),
+            highlight: syntaxHighlighting(style, { fallback: true }),
+        }
+    }
+
+    if (name === 'solarized-dark') {
+        const style = HighlightStyle.define([
+            { tag: tags.heading, color: "#268bd2", fontWeight: "bold" },
+            { tag: tags.strong, fontWeight: "bold" },
+            { tag: tags.emphasis, fontStyle: "italic" },
+            { tag: tags.link, color: "#268bd2", textDecoration: "underline" },
+            { tag: tags.keyword, color: "#859900" },
+            { tag: tags.string, color: "#2aa198" },
+            { tag: tags.comment, color: "#586e75", fontStyle: "italic" },
+            { tag: tags.atom, color: "#cb4b16" },
+            { tag: tags.number, color: "#d33682" },
+            { tag: tags.bool, color: "#268bd2" },
+            { tag: tags.variableName, color: "#839496" },
+            { tag: tags.function(tags.variableName), color: "#268bd2" },
+            { tag: tags.typeName, color: "#b58900" },
+            { tag: tags.punctuation, color: "#839496" },
+        ])
+        const solarizedBase = {
+            ...base,
+            "&": {
+                ...base["&"],
+                backgroundColor: "#002b36",
+                color: "#839496",
+            },
+            ".cm-gutters": {
+                ...base[".cm-gutters"],
+                backgroundColor: "#073642",
+                color: "#586e75",
+            },
+        }
+        return {
+            theme: EditorView.theme(solarizedBase, { dark: true }),
+            highlight: syntaxHighlighting(style, { fallback: true }),
+        }
+    }
+
+    if (name === 'solarized-light') {
+        const style = HighlightStyle.define([
+            { tag: tags.heading, color: "#268bd2", fontWeight: "bold" },
+            { tag: tags.strong, fontWeight: "bold" },
+            { tag: tags.emphasis, fontStyle: "italic" },
+            { tag: tags.link, color: "#268bd2", textDecoration: "underline" },
+            { tag: tags.keyword, color: "#859900" },
+            { tag: tags.string, color: "#2aa198" },
+            { tag: tags.comment, color: "#93a1a1", fontStyle: "italic" },
+            { tag: tags.atom, color: "#cb4b16" },
+            { tag: tags.number, color: "#d33682" },
+            { tag: tags.bool, color: "#268bd2" },
+            { tag: tags.variableName, color: "#657b83" },
+            { tag: tags.function(tags.variableName), color: "#268bd2" },
+            { tag: tags.typeName, color: "#b58900" },
+            { tag: tags.punctuation, color: "#657b83" },
+        ])
+        const solarizedLightBase = {
+            ...base,
+            "&": {
+                ...base["&"],
+                backgroundColor: "#fdf6e3",
+                color: "#657b83",
+            },
+            ".cm-gutters": {
+                ...base[".cm-gutters"],
+                backgroundColor: "#eee8d5",
+                color: "#93a1a1",
+            },
+        }
+        return {
+            theme: EditorView.theme(solarizedLightBase, { dark: false }),
+            highlight: syntaxHighlighting(style, { fallback: true }),
+        }
+    }
+
+    if (name === 'onedark') {
+        const style = HighlightStyle.define([
+            { tag: tags.heading, color: "#61afef", fontWeight: "bold" },
+            { tag: tags.strong, fontWeight: "bold" },
+            { tag: tags.emphasis, fontStyle: "italic" },
+            { tag: tags.link, color: "#61afef", textDecoration: "underline" },
+            { tag: tags.keyword, color: "#c678dd" },
+            { tag: tags.string, color: "#98c379" },
+            { tag: tags.comment, color: "#5c6370", fontStyle: "italic" },
+            { tag: tags.atom, color: "#d19a66" },
+            { tag: tags.number, color: "#d19a66" },
+            { tag: tags.bool, color: "#61afef" },
+            { tag: tags.variableName, color: "#abb2bf" },
+            { tag: tags.function(tags.variableName), color: "#61afef" },
+            { tag: tags.typeName, color: "#e5c07b" },
+            { tag: tags.punctuation, color: "#abb2bf" },
+        ])
+        const onedarkBase = {
+            ...base,
+            "&": {
+                ...base["&"],
+                backgroundColor: "#282c34",
+                color: "#abb2bf",
+            },
+            ".cm-gutters": {
+                ...base[".cm-gutters"],
+                backgroundColor: "#21252b",
+                color: "#5c6370",
+            },
+        }
+        return {
+            theme: EditorView.theme(onedarkBase, { dark: true }),
+            highlight: syntaxHighlighting(style, { fallback: true }),
+        }
+    }
+
     // default
     const style = HighlightStyle.define([
         { tag: tags.heading, color: isDark ? "#569cd6" : "#0969da", fontWeight: "bold" },

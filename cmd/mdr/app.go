@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -352,6 +353,25 @@ func (a *App) GetLaunchArgs() []string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return append([]string(nil), a.launchArgs...)
+}
+
+// OpenInEditor opens the currently displayed file in mde
+func (a *App) OpenInEditor() error {
+	a.mu.Lock()
+	path := a.watchedFile
+	a.mu.Unlock()
+
+	if path == "" {
+		return fmt.Errorf("no file open")
+	}
+
+	cmd := exec.Command("open", "-a", "mde", path)
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to launch mde: %w", err)
+	}
+
+	return nil
 }
 
 // StartWatchingFile starts watching the specified file for changes

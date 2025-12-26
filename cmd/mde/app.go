@@ -93,6 +93,26 @@ func (a *App) GetLaunchArgs() []string {
 	return append([]string(nil), a.launchArgs...)
 }
 
+// LoadFile loads a file directly by path without showing a dialog
+func (a *App) LoadFile(path string) (string, error) {
+	path = files.NormalizePath(path)
+	if path == "" {
+		return "", fmt.Errorf("invalid file path")
+	}
+
+	content, err := files.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	a.mu.Lock()
+	a.currentPath = path
+	a.isDirty = false
+	a.mu.Unlock()
+
+	return content, nil
+}
+
 // OpenFile opens a file dialog and returns the file path and content
 func (a *App) OpenFile() (string, error) {
 	selection, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
@@ -208,7 +228,8 @@ func (a *App) OpenInPreview() error {
 		return fmt.Errorf("no file open")
 	}
 
-	cmd := exec.Command("mdr", path)
+	// Use 'open -a' to reuse existing mdr window if available
+	cmd := exec.Command("open", "-a", "mdr", path)
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to launch mdr: %w", err)
@@ -250,5 +271,5 @@ func (a *App) SetFontScale(scale int) error {
 // ListThemes returns available syntax themes.
 func (a *App) ListThemes() ([]string, error) {
 	// These must match the theme names supported by cmd/mde/frontend/src/editor.js
-	return []string{"default", "github", "monokai"}, nil
+	return []string{"default", "github", "monokai", "dracula", "nord", "solarized-dark", "solarized-light", "onedark"}, nil
 }

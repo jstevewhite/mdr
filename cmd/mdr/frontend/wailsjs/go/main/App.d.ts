@@ -32,6 +32,8 @@ export function NavigateSearch(arg1:string):Promise<main.SearchResult>;
 
 export function OpenAndRender(arg1:string,arg2:string):Promise<main.RenderResult>;
 
+export function OpenInEditor():Promise<void>;
+
 export function RenderFile(arg1:string,arg2:string):Promise<string>;
 
 export function RenderFileWithPalette(arg1:string,arg2:string,arg3:string):Promise<string>;
