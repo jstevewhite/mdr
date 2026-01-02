@@ -14,6 +14,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/jstevewhite/mdr/internal/config"
 	"github.com/jstevewhite/mdr/internal/files"
+	"github.com/jstevewhite/mdr/internal/theme"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -91,11 +92,11 @@ func (a *App) emitStatus(level, code, message string) {
 	a.mu.Lock()
 	ctx := a.ctx
 	a.mu.Unlock()
-	
+
 	if ctx == nil {
 		return
 	}
-	
+
 	level = strings.TrimSpace(level)
 	if level == "" {
 		level = "info"
@@ -224,48 +225,45 @@ func (a *App) SetSearchHighlightColor(color string) error {
 func (a *App) ListThemes() ([]string, error) {
 	items := []string{"default"}
 
+	// 1. Get embedded themes
+	embedded := theme.ListEmbeddedThemes()
+	items = append(items, embedded...)
+
+	// 2. Get local themes from directory
 	dir, err := config.ThemesDir()
-	if err != nil {
-		return items, nil
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return items, nil
-	}
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
+	if err == nil {
+		entries, err := os.ReadDir(dir)
+		if err == nil {
+			for _, e := range entries {
+				if e.IsDir() {
+					continue
+				}
+				name := e.Name()
+				if !strings.HasSuffix(strings.ToLower(name), ".css") {
+					continue
+				}
+				name = strings.TrimSuffix(name, filepath.Ext(name))
+				if name == "" {
+					continue
+				}
+				items = append(items, name)
+			}
 		}
-		name := e.Name()
-		if !strings.HasSuffix(strings.ToLower(name), ".css") {
-			continue
-		}
-		name = strings.TrimSuffix(name, filepath.Ext(name))
-		if name == "" {
-			continue
-		}
-		items = append(items, name)
 	}
 
+	// 3. Deduplicate and sort
 	seen := map[string]struct{}{}
 	uniq := make([]string, 0, len(items))
 	for _, it := range items {
-		if _, ok := seen[it]; ok {
+		if _, ok := seen[it]; ok || it == "default" {
 			continue
 		}
 		seen[it] = struct{}{}
 		uniq = append(uniq, it)
 	}
+	sort.Strings(uniq)
 
-	var defaultFirst []string
-	for _, it := range uniq {
-		if it == "default" {
-			continue
-		}
-		defaultFirst = append(defaultFirst, it)
-	}
-	sort.Strings(defaultFirst)
-	return append([]string{"default"}, defaultFirst...), nil
+	return append([]string{"default"}, uniq...), nil
 }
 
 func (a *App) RenderFile(path string, theme string) (string, error) {
@@ -306,10 +304,10 @@ func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette str
 	}
 
 	markdown := string(data)
-	
+
 	// Store document content for searching
 	a.SetCurrentDocument(markdown)
-	
+
 	output, err := RenderMarkdownWithTOC(markdown, theme, palette, config.GetFontScale())
 	if err != nil {
 		return RenderResult{}, err
@@ -424,7 +422,7 @@ func (a *App) StopWatchingFile() {
 	a.watchedThemeFile = ""
 	a.watchedThemeName = ""
 	a.mu.Unlock()
-	
+
 	// Close watcher outside the lock to avoid blocking
 	if watcher != nil {
 		watcher.Close()
@@ -496,7 +494,7 @@ func (a *App) refreshThemeWatch(themeName string) {
 	a.mu.Lock()
 	watcher := a.watcher
 	a.mu.Unlock()
-	
+
 	if watcher == nil {
 		return
 	}
@@ -505,10 +503,10 @@ func (a *App) refreshThemeWatch(themeName string) {
 	a.mu.Lock()
 	oldThemeFile := a.watchedThemeFile
 	a.mu.Unlock()
-	
+
 	if oldThemeFile != "" {
 		_ = watcher.Remove(oldThemeFile)
-		
+
 		// FIX: Clear with mutex protection
 		a.mu.Lock()
 		a.watchedThemeFile = ""
@@ -542,7 +540,6 @@ func (a *App) refreshThemeWatch(themeName string) {
 	a.watchedThemeName = strings.TrimSuffix(filepath.Base(name), filepath.Ext(name))
 	a.mu.Unlock()
 }
-
 
 // SearchDocument searches for text in the current document
 func (a *App) SearchDocument(query string, caseSensitive bool) (SearchResult, error) {
