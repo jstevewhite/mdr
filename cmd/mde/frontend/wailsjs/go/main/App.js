@@ -26,6 +26,10 @@ export function GetVimMode() {
   return window['go']['main']['App']['GetVimMode']();
 }
 
+export function GetWordWrap() {
+  return window['go']['main']['App']['GetWordWrap']();
+}
+
 export function IsDirty() {
   return window['go']['main']['App']['IsDirty']();
 }
@@ -72,4 +76,8 @@ export function SetTheme(arg1) {
 
 export function SetVimMode(arg1) {
   return window['go']['main']['App']['SetVimMode'](arg1);
+}
+
+export function SetWordWrap(arg1) {
+  return window['go']['main']['App']['SetWordWrap'](arg1);
 }

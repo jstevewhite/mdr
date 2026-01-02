@@ -8,7 +8,8 @@ import {
     wrapSelection,
     setFontScale,
     setTheme,
-    setVimMode
+    setVimMode,
+    setWordWrap
 } from './editor.js'
 
 // Defensive: handle accidental duplicate inclusion (e.g. both dev + built assets wired)
@@ -36,6 +37,7 @@ let fontScale = 100
 let currentTheme = 'default'
 let currentPalette = 'dark'
 let vimMode = false
+let wordWrap = false
 
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
@@ -99,14 +101,17 @@ async function loadSettings() {
         currentPalette = await window.go.main.App.GetPalette()
         fontScale = await window.go.main.App.GetFontScale()
         vimMode = await window.go.main.App.GetVimMode()
+        wordWrap = await window.go.main.App.GetWordWrap()
 
         document.getElementById('theme-select').value = currentTheme
         document.getElementById('palette-select').value = currentPalette
         document.getElementById('vim-mode-checkbox').checked = vimMode
+        document.getElementById('word-wrap-checkbox').checked = wordWrap
         document.body.className = `palette-${currentPalette}`
         setFontScale(editorView, fontScale)
         setTheme(editorView, currentTheme, currentPalette)
         setVimMode(editorView, vimMode)
+        setWordWrap(editorView, wordWrap)
     } catch (err) {
         console.error('Failed to load settings:', err)
     }
@@ -153,6 +158,7 @@ function setupToolbar() {
 
     // Vim mode
     document.getElementById('vim-mode-checkbox').addEventListener('change', toggleVimMode)
+    document.getElementById('word-wrap-checkbox').addEventListener('change', toggleWordWrap)
 
     // Font
     document.getElementById('font-increase').addEventListener('click', () => adjustFont(10))
@@ -170,9 +176,19 @@ function setupKeyboardShortcuts() {
                 case 'i': e.preventDefault(); wrapSelection(editorView, '*', '*'); break
                 case 'k': e.preventDefault(); insertLink(); break
                 case '`': e.preventDefault(); wrapSelection(editorView, '`', '`'); break
+                case 'w': e.preventDefault(); toggleWordWrapFromShortcut(); break
             }
         }
     })
+}
+
+function toggleWordWrapFromShortcut() {
+    wordWrap = !wordWrap
+    document.getElementById('word-wrap-checkbox').checked = wordWrap
+    window.go.main.App.SetWordWrap(wordWrap).catch(err => {
+        console.error('Failed to toggle word wrap:', err)
+    })
+    setWordWrap(editorView, wordWrap)
 }
 
 async function openFile() {
@@ -261,6 +277,16 @@ async function toggleVimMode(e) {
         setVimMode(editorView, vimMode)
     } catch (err) {
         console.error('Failed to toggle vim mode:', err)
+    }
+}
+
+async function toggleWordWrap(e) {
+    try {
+        wordWrap = e.target.checked
+        await window.go.main.App.SetWordWrap(wordWrap)
+        setWordWrap(editorView, wordWrap)
+    } catch (err) {
+        console.error('Failed to toggle word wrap:', err)
     }
 }
 

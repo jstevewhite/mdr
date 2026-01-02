@@ -32,11 +32,13 @@ This application is largely the result of working with various AI (Gemini, Claud
 - Multiple syntax themes: default, github, monokai, dracula, nord, solarized-dark, solarized-light, onedark
 - Palette override: `light` / `dark`
 - Font size controls with persistence
+- **Word wrap toggle** with persistence
 - **Preview button** to view rendered output in mdr
 - Markdown formatting toolbar (headings, bold, italic, lists, links, etc.)
 - Real-time character and cursor position display
 - Automatic file association handling
 - **Keyboard shortcuts** for common operations
+- **Vim mode** option for Vim users
 
 ### Configuration
 
@@ -45,7 +47,7 @@ This application is largely the result of working with various AI (Gemini, Claud
 - `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
 
 **mde settings** are stored in `~/.config/mde/mde.conf`:
-- `palette`, `theme`, `fontScale`
+- `palette`, `theme`, `fontScale`, `wordWrap`, `vimMode`
 
 ## Mermaid Diagrams
 
@@ -114,6 +116,9 @@ See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax detail
 - **Italic**: `Ctrl+I` (Windows/Linux) / `Cmd+I` (Mac)
 - **Insert Link**: `Ctrl+K` (Windows/Linux) / `Cmd+K` (Mac)
 - **Code**: `Ctrl+`` (Windows/Linux) / `Cmd+`` (Mac)
+
+#### Editor Options
+- **Toggle Word Wrap**: `Ctrl+W` (Windows/Linux) / `Cmd+W` (Mac)
 
 Security notes:
 

@@ -222,3 +222,29 @@ func SetVimMode(enabled bool) error {
 	}
 	return WriteConfig(cfg)
 }
+
+// GetWordWrap returns whether word wrap is enabled from mde's config.
+func GetWordWrap() bool {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["wordWrap"])
+	return v == "true"
+}
+
+// SetWordWrap sets word wrap in mde's config.
+func SetWordWrap(enabled bool) error {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return err
+	}
+
+	if enabled {
+		cfg["wordWrap"] = "true"
+	} else {
+		cfg["wordWrap"] = "false"
+	}
+	return WriteConfig(cfg)
+}

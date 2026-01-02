@@ -13,6 +13,8 @@ export function GetTheme():Promise<string>;
 
 export function GetVimMode():Promise<boolean>;
 
+export function GetWordWrap():Promise<boolean>;
+
 export function IsDirty():Promise<boolean>;
 
 export function ListThemes():Promise<Array<string>>;
@@ -36,3 +38,5 @@ export function SetPalette(arg1:string):Promise<void>;
 export function SetTheme(arg1:string):Promise<void>;
 
 export function SetVimMode(arg1:boolean):Promise<void>;
+
+export function SetWordWrap(arg1:boolean):Promise<void>;

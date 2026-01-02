@@ -278,6 +278,16 @@ func (a *App) SetVimMode(enabled bool) error {
 	return mdeconfig.SetVimMode(enabled)
 }
 
+// GetWordWrap returns whether word wrap is enabled
+func (a *App) GetWordWrap() bool {
+	return mdeconfig.GetWordWrap()
+}
+
+// SetWordWrap sets word wrap
+func (a *App) SetWordWrap(enabled bool) error {
+	return mdeconfig.SetWordWrap(enabled)
+}
+
 // ListThemes returns available syntax themes.
 func (a *App) ListThemes() ([]string, error) {
 	// These must match the theme names supported by cmd/mde/frontend/src/editor.js
