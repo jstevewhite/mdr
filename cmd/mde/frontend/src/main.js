@@ -7,7 +7,8 @@ import {
     insertAtCursor,
     wrapSelection,
     setFontScale,
-    setTheme
+    setTheme,
+    setVimMode
 } from './editor.js'
 
 // Defensive: handle accidental duplicate inclusion (e.g. both dev + built assets wired)
@@ -34,6 +35,7 @@ let isDirty = false
 let fontScale = 100
 let currentTheme = 'default'
 let currentPalette = 'dark'
+let vimMode = false
 
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
@@ -96,12 +98,15 @@ async function loadSettings() {
         currentTheme = await window.go.main.App.GetTheme()
         currentPalette = await window.go.main.App.GetPalette()
         fontScale = await window.go.main.App.GetFontScale()
+        vimMode = await window.go.main.App.GetVimMode()
 
         document.getElementById('theme-select').value = currentTheme
         document.getElementById('palette-select').value = currentPalette
+        document.getElementById('vim-mode-checkbox').checked = vimMode
         document.body.className = `palette-${currentPalette}`
         setFontScale(editorView, fontScale)
         setTheme(editorView, currentTheme, currentPalette)
+        setVimMode(editorView, vimMode)
     } catch (err) {
         console.error('Failed to load settings:', err)
     }
@@ -145,6 +150,9 @@ function setupToolbar() {
     // Theme
     document.getElementById('theme-select').addEventListener('change', changeTheme)
     document.getElementById('palette-select').addEventListener('change', changePalette)
+
+    // Vim mode
+    document.getElementById('vim-mode-checkbox').addEventListener('change', toggleVimMode)
 
     // Font
     document.getElementById('font-increase').addEventListener('click', () => adjustFont(10))
@@ -243,6 +251,16 @@ async function changePalette(e) {
         setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to change palette:', err)
+    }
+}
+
+async function toggleVimMode(e) {
+    try {
+        vimMode = e.target.checked
+        await window.go.main.App.SetVimMode(vimMode)
+        setVimMode(editorView, vimMode)
+    } catch (err) {
+        console.error('Failed to toggle vim mode:', err)
     }
 }
 

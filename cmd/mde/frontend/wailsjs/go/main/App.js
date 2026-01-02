@@ -22,6 +22,10 @@ export function GetTheme() {
   return window['go']['main']['App']['GetTheme']();
 }
 
+export function GetVimMode() {
+  return window['go']['main']['App']['GetVimMode']();
+}
+
 export function IsDirty() {
   return window['go']['main']['App']['IsDirty']();
 }
@@ -64,4 +68,8 @@ export function SetPalette(arg1) {
 
 export function SetTheme(arg1) {
   return window['go']['main']['App']['SetTheme'](arg1);
+}
+
+export function SetVimMode(arg1) {
+  return window['go']['main']['App']['SetVimMode'](arg1);
 }

@@ -100,6 +100,29 @@ body.palette-light .select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f2328' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--mde-border);
+    background: var(--mde-panel);
+    color: var(--mde-fg);
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.checkbox-label:hover {
+    border-color: var(--mde-accent);
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--mde-accent);
+}
+
 .separator {
     width: 1px;
     height: 18px;

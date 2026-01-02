@@ -15,7 +15,8 @@
     "@codemirror/language": "^6.0.0",
     "@codemirror/commands": "^6.3.3",
     "@codemirror/search": "^6.5.5",
-    "@lezer/highlight": "^1.0.0"
+    "@lezer/highlight": "^1.0.0",
+    "@replit/codemirror-vim": "^6.0.14"
   },
   "devDependencies": {
     "vite": "^3.0.7"

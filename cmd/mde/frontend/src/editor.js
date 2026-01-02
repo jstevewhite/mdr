@@ -6,9 +6,11 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { searchKeymap } from '@codemirror/search'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
+import { vim } from '@replit/codemirror-vim'
 
 const themeCompartment = new Compartment()
 const highlightCompartment = new Compartment()
+const vimCompartment = new Compartment()
 
 function themeFor(name, palette) {
     const isDark = palette === 'dark' || palette === 'theme'
@@ -315,6 +317,7 @@ export function createEditor(parent, content = '', callbacks = {}) {
             markdown(),
             themeCompartment.of(initial.theme),
             highlightCompartment.of(initial.highlight),
+            vimCompartment.of([]),
             history(),
             keymap.of([
                 ...defaultKeymap,
@@ -405,5 +408,12 @@ export function setTheme(view, themeName, palette) {
             themeCompartment.reconfigure(theme),
             highlightCompartment.reconfigure(highlight),
         ]
+    })
+}
+
+export function setVimMode(view, enabled) {
+    if (!view) return
+    view.dispatch({
+        effects: vimCompartment.reconfigure(enabled ? vim() : [])
     })
 }

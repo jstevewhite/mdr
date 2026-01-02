@@ -196,3 +196,29 @@ func SetFontScale(scale int) error {
 	cfg["fontScale"] = strconv.Itoa(scale)
 	return WriteConfig(cfg)
 }
+
+// GetVimMode returns whether vim mode is enabled from mde's config.
+func GetVimMode() bool {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["vimMode"])
+	return v == "true"
+}
+
+// SetVimMode sets vim mode in mde's config.
+func SetVimMode(enabled bool) error {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return err
+	}
+
+	if enabled {
+		cfg["vimMode"] = "true"
+	} else {
+		cfg["vimMode"] = "false"
+	}
+	return WriteConfig(cfg)
+}

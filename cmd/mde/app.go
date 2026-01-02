@@ -268,6 +268,16 @@ func (a *App) SetFontScale(scale int) error {
 	return mdeconfig.SetFontScale(scale)
 }
 
+// GetVimMode returns whether vim mode is enabled
+func (a *App) GetVimMode() bool {
+	return mdeconfig.GetVimMode()
+}
+
+// SetVimMode sets vim mode
+func (a *App) SetVimMode(enabled bool) error {
+	return mdeconfig.SetVimMode(enabled)
+}
+
 // ListThemes returns available syntax themes.
 func (a *App) ListThemes() ([]string, error) {
 	// These must match the theme names supported by cmd/mde/frontend/src/editor.js
