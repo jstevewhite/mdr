@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	rt "runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -363,7 +364,21 @@ func (a *App) OpenInEditor() error {
 		return fmt.Errorf("no file open")
 	}
 
-	cmd := exec.Command("open", "-a", "mde", path)
+	var cmd *exec.Cmd
+	switch rt.GOOS {
+	case "darwin":
+		// macOS: use 'open -a' to launch application
+		cmd = exec.Command("open", "-a", "mde", path)
+	case "linux":
+		// Linux: try to launch mde directly
+		cmd = exec.Command("mde", path)
+	case "windows":
+		// Windows: use start command
+		cmd = exec.Command("cmd", "/c", "start", "mde", path)
+	default:
+		return fmt.Errorf("unsupported platform: %s", rt.GOOS)
+	}
+
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to launch mde: %w", err)

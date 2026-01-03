@@ -9,7 +9,8 @@ import {
     setFontScale,
     setTheme,
     setVimMode,
-    setWordWrap
+    setWordWrap,
+    setLintEnabled
 } from './editor.js'
 
 // Defensive: handle accidental duplicate inclusion (e.g. both dev + built assets wired)
@@ -38,6 +39,7 @@ let currentTheme = 'default'
 let currentPalette = 'dark'
 let vimMode = false
 let wordWrap = false
+let lintEnabled = false
 
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
@@ -102,16 +104,19 @@ async function loadSettings() {
         fontScale = await window.go.main.App.GetFontScale()
         vimMode = await window.go.main.App.GetVimMode()
         wordWrap = await window.go.main.App.GetWordWrap()
-
+        lintEnabled = await window.go.main.App.GetLintEnabled()
+        
         document.getElementById('theme-select').value = currentTheme
         document.getElementById('palette-select').value = currentPalette
         document.getElementById('vim-mode-checkbox').checked = vimMode
         document.getElementById('word-wrap-checkbox').checked = wordWrap
+        document.getElementById('lint-checkbox').checked = lintEnabled
         document.body.className = `palette-${currentPalette}`
         setFontScale(editorView, fontScale)
         setTheme(editorView, currentTheme, currentPalette)
         setVimMode(editorView, vimMode)
         setWordWrap(editorView, wordWrap)
+        setLintEnabled(editorView, lintEnabled)
     } catch (err) {
         console.error('Failed to load settings:', err)
     }
@@ -159,6 +164,7 @@ function setupToolbar() {
     // Vim mode
     document.getElementById('vim-mode-checkbox').addEventListener('change', toggleVimMode)
     document.getElementById('word-wrap-checkbox').addEventListener('change', toggleWordWrap)
+    document.getElementById('lint-checkbox').addEventListener('change', toggleLint)
 
     // Font
     document.getElementById('font-increase').addEventListener('click', () => adjustFont(10))
@@ -287,6 +293,16 @@ async function toggleWordWrap(e) {
         setWordWrap(editorView, wordWrap)
     } catch (err) {
         console.error('Failed to toggle word wrap:', err)
+    }
+}
+
+async function toggleLint(e) {
+    try {
+        lintEnabled = e.target.checked
+        await window.go.main.App.SetLintEnabled(lintEnabled)
+        setLintEnabled(editorView, lintEnabled)
+    } catch (err) {
+        console.error('Failed to toggle linting:', err)
     }
 }
 

@@ -7,6 +7,8 @@ export function GetFontScale():Promise<number>;
 
 export function GetLaunchArgs():Promise<Array<string>>;
 
+export function GetLintEnabled():Promise<boolean>;
+
 export function GetPalette():Promise<string>;
 
 export function GetTheme():Promise<string>;
@@ -32,6 +34,8 @@ export function SaveFileAs(arg1:string):Promise<void>;
 export function SetDirty(arg1:boolean):Promise<void>;
 
 export function SetFontScale(arg1:number):Promise<void>;
+
+export function SetLintEnabled(arg1:boolean):Promise<void>;
 
 export function SetPalette(arg1:string):Promise<void>;
 

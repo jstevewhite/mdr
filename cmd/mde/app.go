@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	rt "runtime"
 	"strings"
 	"sync"
 
@@ -228,8 +229,21 @@ func (a *App) OpenInPreview() error {
 		return fmt.Errorf("no file open")
 	}
 
-	// Use 'open -a' to reuse existing mdr window if available
-	cmd := exec.Command("open", "-a", "mdr", path)
+	var cmd *exec.Cmd
+	switch rt.GOOS {
+	case "darwin":
+		// macOS: use 'open -a' to reuse existing mdr window if available
+		cmd = exec.Command("open", "-a", "mdr", path)
+	case "linux":
+		// Linux: try to launch mdr directly
+		cmd = exec.Command("mdr", path)
+	case "windows":
+		// Windows: use start command
+		cmd = exec.Command("cmd", "/c", "start", "mdr", path)
+	default:
+		return fmt.Errorf("unsupported platform: %s", rt.GOOS)
+	}
+
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to launch mdr: %w", err)
@@ -286,6 +300,16 @@ func (a *App) GetWordWrap() bool {
 // SetWordWrap sets word wrap
 func (a *App) SetWordWrap(enabled bool) error {
 	return mdeconfig.SetWordWrap(enabled)
+}
+
+// GetLintEnabled returns whether linting is enabled
+func (a *App) GetLintEnabled() bool {
+	return mdeconfig.GetLintEnabled()
+}
+
+// SetLintEnabled sets linting state
+func (a *App) SetLintEnabled(enabled bool) error {
+	return mdeconfig.SetLintEnabled(enabled)
 }
 
 // ListThemes returns available syntax themes.

@@ -12,6 +12,7 @@ const themeCompartment = new Compartment()
 const highlightCompartment = new Compartment()
 const vimCompartment = new Compartment()
 const wrapCompartment = new Compartment()
+const lintCompartment = new Compartment()
 
 function themeFor(name, palette) {
     const isDark = palette === 'dark' || palette === 'theme'
@@ -320,6 +321,7 @@ export function createEditor(parent, content = '', callbacks = {}) {
             highlightCompartment.of(initial.highlight),
             vimCompartment.of([]),
             wrapCompartment.of([]),
+            lintCompartment.of([]),
             history(),
             keymap.of([
                 ...defaultKeymap,
@@ -424,5 +426,12 @@ export function setWordWrap(view, enabled) {
     if (!view) return
     view.dispatch({
         effects: wrapCompartment.reconfigure(enabled ? EditorView.lineWrapping : [])
+    })
+}
+
+export function setLintEnabled(view, enabled) {
+    if (!view) return
+    view.dispatch({
+        effects: lintCompartment.reconfigure(enabled ? lintExtension : [])
     })
 }

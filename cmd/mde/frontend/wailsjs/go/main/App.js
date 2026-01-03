@@ -14,6 +14,10 @@ export function GetLaunchArgs() {
   return window['go']['main']['App']['GetLaunchArgs']();
 }
 
+export function GetLintEnabled() {
+  return window['go']['main']['App']['GetLintEnabled']();
+}
+
 export function GetPalette() {
   return window['go']['main']['App']['GetPalette']();
 }
@@ -64,6 +68,10 @@ export function SetDirty(arg1) {
 
 export function SetFontScale(arg1) {
   return window['go']['main']['App']['SetFontScale'](arg1);
+}
+
+export function SetLintEnabled(arg1) {
+  return window['go']['main']['App']['SetLintEnabled'](arg1);
 }
 
 export function SetPalette(arg1) {

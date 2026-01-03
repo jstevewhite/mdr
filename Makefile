@@ -15,23 +15,26 @@ mdr:
 	@touch cmd/mdr/frontend/dist/.wails-embed-placeholder
 ifeq ($(UNAME_S),Darwin)
 	@echo "Building mdr for macOS..."
-	cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr
+	cd cmd/mdr && $(WAILS) build
+	@cp -r cmd/mdr/build/bin/mdr.app build/bin/
 else ifeq ($(UNAME_S),Linux)
 	@echo "Building mdr for Linux..."
 	@if pkg-config --exists webkit2gtk-4.0; then \
 		echo "Building with WebKit 4.0..."; \
-		cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr; \
+		cd cmd/mdr && $(WAILS) build; \
 	elif pkg-config --exists webkit2gtk-4.1; then \
 		echo "Building with WebKit 4.1..."; \
-		cd cmd/mdr && $(WAILS) build -tags webkit2_41 -o ../../build/bin/mdr; \
+		cd cmd/mdr && $(WAILS) build -tags webkit2_41; \
 	else \
 		echo "Error: Neither webkit2gtk-4.0 nor webkit2gtk-4.1 found."; \
 		echo "Please install libwebkit2gtk-4.1-dev or libwebkit2gtk-4.0-dev."; \
 		exit 1; \
 	fi
+	@cp cmd/mdr/build/bin/mdr build/bin/
 else ifeq ($(UNAME_S),MINGW64_NT)
 	@echo "Building mdr for Windows..."
-	cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr.exe
+	cd cmd/mdr && $(WAILS) build
+	@cp cmd/mdr/build/bin/mdr.exe build/bin/
 else
 	@echo "Unsupported platform: $(UNAME_S)"
 	@exit 1
@@ -44,30 +47,33 @@ mde:
 	@touch cmd/mde/frontend/dist/.wails-embed-placeholder
 ifeq ($(UNAME_S),Darwin)
 	@echo "Building mde for macOS..."
-	cd cmd/mde && $(WAILS) build -o ../../build/bin/mde
+	cd cmd/mde && $(WAILS) build
+	@cp -r cmd/mde/build/bin/mde.app build/bin/
 else ifeq ($(UNAME_S),Linux)
 	@echo "Building mde for Linux..."
 	@if pkg-config --exists webkit2gtk-4.0; then \
 		echo "Building with WebKit 4.0..."; \
-		cd cmd/mde && $(WAILS) build -o ../../build/bin/mde; \
+		cd cmd/mde && $(WAILS) build; \
 	elif pkg-config --exists webkit2gtk-4.1; then \
 		echo "Building with WebKit 4.1..."; \
-		cd cmd/mde && $(WAILS) build -tags webkit2_41 -o ../../build/bin/mde; \
+		cd cmd/mde && $(WAILS) build -tags webkit2_41; \
 	else \
 		echo "Error: Neither webkit2gtk-4.0 nor webkit2gtk-4.1 found."; \
 		echo "Please install libwebkit2gtk-4.1-dev or libwebkit2gtk-4.0-dev."; \
 		exit 1; \
 	fi
+	@cp cmd/mde/build/bin/mde build/bin/
 else ifeq ($(UNAME_S),MINGW64_NT)
 	@echo "Building mde for Windows..."
-	cd cmd/mde && $(WAILS) build -o ../../build/bin/mde.exe
+	cd cmd/mde && $(WAILS) build
+	@cp cmd/mde/build/bin/mde.exe build/bin/
 else
 	@echo "Unsupported platform: $(UNAME_S)"
 	@exit 1
 endif
 
-# Alias for backward compatibility
-build: mdr
+# Build both applications
+build: mdr mde
 
 # Development mode - runs wails dev for mdr
 dev: dev-mdr
@@ -91,24 +97,29 @@ endif
 # Install the application based on OS
 install: install-mdr install-mde
 
-install-mdr: mdr
+install-mdr:
 ifeq ($(UNAME_S),Darwin)
+	@if [ ! -d build/bin/mdr.app ]; then \
+		echo "Error: mdr not built. Please run 'make build' first."; \
+		exit 1; \
+	fi
 	@echo "Installing mdr for macOS..."
 	@mkdir -p ~/Applications
 	@cp -r build/bin/mdr.app ~/Applications/
 	@echo "Installed mdr.app to ~/Applications/"
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
-	@ln -sf "$$HOME/Applications/mde.app/Contents/MacOS/mde" "$$HOME/bin/mde"
-	@echo "Linked mdr and mde binaries to ~/bin/"
+	@echo "Linked mdr binary to ~/bin/"
 	$(MAKE) install_themes
 else ifeq ($(UNAME_S),Linux)
+	@if [ ! -f build/bin/mdr ]; then \
+		echo "Error: mdr not built. Please run 'make build' first."; \
+		exit 1; \
+	fi
 	@echo "Installing mdr for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
-	@cp build/bin/mde /usr/local/bin/
 	@chmod +x /usr/local/bin/mdr
-	@chmod +x /usr/local/bin/mde
-	@echo "Installed mdr and mde binaries to /usr/local/bin/"
+	@echo "Installed mdr binary to /usr/local/bin/"
 	@echo "Note: Run 'make install_themes' as your normal user to install themes."
 else ifeq ($(UNAME_S),MINGW64_NT)
 	@echo "Installing mdr for Windows..."
@@ -118,16 +129,24 @@ else
 	@exit 1
 endif
 
-install-mde: mde
+install-mde:
 ifeq ($(UNAME_S),Darwin)
+	@if [ ! -d build/bin/mde.app ]; then \
+		echo "Error: mde not built. Please run 'make build' first."; \
+		exit 1; \
+	fi
 	@echo "Installing mde for macOS..."
 	@mkdir -p ~/Applications
-	@cp -r cmd/mde/build/bin/mde.app ~/Applications/
+	@cp -r build/bin/mde.app ~/Applications/
 	@echo "Installed mde.app to ~/Applications/"
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mde.app/Contents/MacOS/mde" "$$HOME/bin/mde"
 	@echo "Linked mde binary to ~/bin/mde"
 else ifeq ($(UNAME_S),Linux)
+	@if [ ! -f build/bin/mde ]; then \
+		echo "Error: mde not built. Please run 'make build' first."; \
+		exit 1; \
+	fi
 	@echo "Installing mde for Linux..."
 	@cp build/bin/mde /usr/local/bin/
 	@chmod +x /usr/local/bin/mde
@@ -143,7 +162,7 @@ endif
 # Install themes to user config directory
 install_themes:
 	@mkdir -p "$$HOME/.config/mdr/mdthemes"
-	@cp -f modman.css nordic.css "$$HOME/.config/mdr/mdthemes/"
+	@cp -f internal/theme/embedded/modman.css internal/theme/embedded/nordic.css "$$HOME/.config/mdr/mdthemes/"
 	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
 
 # Clean build artifacts

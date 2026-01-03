@@ -4,6 +4,8 @@ A cross-platform Markdown viewer (`mdr`) and editor (`mde`) built with Wails.
 
 This application is largely the result of working with various AI (Gemini, Claude, GPT, Deepseek, and Qwen3-coder) and countless cycles of 'wait, not like that'. The architecture is mine, the code is mostly not, though I did have to jump in a few times and fix things. I wanted a simple application for rendering and editing Markdown on my Mac and my Asus Ascent GX10, so those are the platforms it's been tested on. I don't have a Windows box, which is why it isn't tested, but the AIs assure me it should build and work if someone wants to try it. I tried to make it fast and light.
 
+There's an issue where it's slow to load using the UI in macOS. It's got something to do with signing. I'll figure it out.
+
 ## mdr - Markdown Viewer
 
 `mdr` is a real-time Markdown viewer that reloads automatically when files change. It's perfect for viewing rendered Markdown alongside your favorite text editor. It's also great for quickly viewing any README.md file.

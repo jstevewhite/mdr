@@ -248,3 +248,29 @@ func SetWordWrap(enabled bool) error {
 	}
 	return WriteConfig(cfg)
 }
+
+// GetLintEnabled returns whether linting is enabled from mde's config.
+func GetLintEnabled() bool {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return false
+	}
+
+	v := strings.TrimSpace(cfg["lintEnabled"])
+	return v == "true"
+}
+
+// SetLintEnabled sets linting state in mde's config.
+func SetLintEnabled(enabled bool) error {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return err
+	}
+
+	if enabled {
+		cfg["lintEnabled"] = "true"
+	} else {
+		cfg["lintEnabled"] = "false"
+	}
+	return WriteConfig(cfg)
+}
