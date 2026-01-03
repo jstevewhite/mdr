@@ -22,12 +22,24 @@ export function GetTheme() {
   return window['go']['main']['App']['GetTheme']();
 }
 
+export function GetVimMode() {
+  return window['go']['main']['App']['GetVimMode']();
+}
+
+export function GetWordWrap() {
+  return window['go']['main']['App']['GetWordWrap']();
+}
+
 export function IsDirty() {
   return window['go']['main']['App']['IsDirty']();
 }
 
 export function ListThemes() {
   return window['go']['main']['App']['ListThemes']();
+}
+
+export function LoadFile(arg1) {
+  return window['go']['main']['App']['LoadFile'](arg1);
 }
 
 export function OpenFile() {
@@ -60,4 +72,12 @@ export function SetPalette(arg1) {
 
 export function SetTheme(arg1) {
   return window['go']['main']['App']['SetTheme'](arg1);
+}
+
+export function SetVimMode(arg1) {
+  return window['go']['main']['App']['SetVimMode'](arg1);
+}
+
+export function SetWordWrap(arg1) {
+  return window['go']['main']['App']['SetWordWrap'](arg1);
 }

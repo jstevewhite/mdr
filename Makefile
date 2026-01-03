@@ -3,7 +3,7 @@ WAILS=$(shell go env GOPATH)/bin/wails
 # Detect the operating system
 UNAME_S := $(shell uname -s)
 
-.PHONY: all mdr mde build run dev dev-mdr dev-mde clean install install_themes
+.PHONY: all mdr mde build run dev dev-mdr dev-mde clean install install-mdr install-mde install_themes
 
 # Build all targets
 all: mdr mde
@@ -11,6 +11,8 @@ all: mdr mde
 # Build just mdr
 mdr:
 	@mkdir -p build/bin
+	@mkdir -p cmd/mdr/frontend/dist
+	@touch cmd/mdr/frontend/dist/.wails-embed-placeholder
 ifeq ($(UNAME_S),Darwin)
 	@echo "Building mdr for macOS..."
 	cd cmd/mdr && $(WAILS) build -o ../../build/bin/mdr
@@ -38,6 +40,8 @@ endif
 # Build just mde
 mde:
 	@mkdir -p build/bin
+	@mkdir -p cmd/mde/frontend/dist
+	@touch cmd/mde/frontend/dist/.wails-embed-placeholder
 ifeq ($(UNAME_S),Darwin)
 	@echo "Building mde for macOS..."
 	cd cmd/mde && $(WAILS) build -o ../../build/bin/mde
@@ -85,21 +89,21 @@ else ifeq ($(UNAME_S),MINGW64_NT)
 endif
 
 # Install the application based on OS
-# Install the application based on OS
-install:
+install: install-mdr install-mde
+
+install-mdr: mdr
 ifeq ($(UNAME_S),Darwin)
-	@echo "Installing for macOS..."
+	@echo "Installing mdr for macOS..."
 	@mkdir -p ~/Applications
 	@cp -r build/bin/mdr.app ~/Applications/
-	@cp -r build/bin/mde.app ~/Applications/
-	@echo "Installed mdr.app and mde.app to ~/Applications/"
+	@echo "Installed mdr.app to ~/Applications/"
 	@mkdir -p ~/bin
 	@ln -sf "$$HOME/Applications/mdr.app/Contents/MacOS/mdr" "$$HOME/bin/mdr"
 	@ln -sf "$$HOME/Applications/mde.app/Contents/MacOS/mde" "$$HOME/bin/mde"
 	@echo "Linked mdr and mde binaries to ~/bin/"
 	$(MAKE) install_themes
 else ifeq ($(UNAME_S),Linux)
-	@echo "Installing for Linux..."
+	@echo "Installing mdr for Linux..."
 	@cp build/bin/mdr /usr/local/bin/
 	@cp build/bin/mde /usr/local/bin/
 	@chmod +x /usr/local/bin/mdr
@@ -107,7 +111,29 @@ else ifeq ($(UNAME_S),Linux)
 	@echo "Installed mdr and mde binaries to /usr/local/bin/"
 	@echo "Note: Run 'make install_themes' as your normal user to install themes."
 else ifeq ($(UNAME_S),MINGW64_NT)
-	@echo "Installing for Windows..."
+	@echo "Installing mdr for Windows..."
+	@echo "Windows installation not yet implemented"
+else
+	@echo "Unsupported platform for installation: $(UNAME_S)"
+	@exit 1
+endif
+
+install-mde: mde
+ifeq ($(UNAME_S),Darwin)
+	@echo "Installing mde for macOS..."
+	@mkdir -p ~/Applications
+	@cp -r cmd/mde/build/bin/mde.app ~/Applications/
+	@echo "Installed mde.app to ~/Applications/"
+	@mkdir -p ~/bin
+	@ln -sf "$$HOME/Applications/mde.app/Contents/MacOS/mde" "$$HOME/bin/mde"
+	@echo "Linked mde binary to ~/bin/mde"
+else ifeq ($(UNAME_S),Linux)
+	@echo "Installing mde for Linux..."
+	@cp build/bin/mde /usr/local/bin/
+	@chmod +x /usr/local/bin/mde
+	@echo "Installed mde binary to /usr/local/bin/"
+else ifeq ($(UNAME_S),MINGW64_NT)
+	@echo "Installing mde for Windows..."
 	@echo "Windows installation not yet implemented"
 else
 	@echo "Unsupported platform for installation: $(UNAME_S)"

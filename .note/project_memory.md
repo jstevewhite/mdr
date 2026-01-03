@@ -23,15 +23,15 @@
 ## 🏗️ Code Structure & Interfaces
 
 - **Directory Layout:**
-  - `frontend/`: Vite frontend
+  - `cmd/mdr/`: Markdown Viewer app
+  - `cmd/mde/`: Markdown Editor app
+  - `internal/theme/`: Theme loading logic (local + embedded fallback)
+  - `internal/theme/embedded/`: Default CSS themes (`modman.css`, `nordic.css`)
+  - `frontend/`: Shared frontend assets (if applicable)
   - `build/`: build artifacts
   - `.note/`: project memory + session logs
-- **Key Components & Interfaces:**
-  - `main.go`: Wails app bootstrap
-  - `app.go`: Wails bindings / app methods (open file, settings, theme list)
-  - `renderer.go`: Markdown rendering and theme CSS loading (`~/.config/mdr/mdthemes`)
-  - `config.go`: settings + path helpers (e.g., theme directory)
-- **Architecture Diagram (Mermaid):**
+
+## 🏗️ Architecture Diagram (Mermaid)
 
   ```mermaid
   flowchart TD
@@ -39,13 +39,17 @@
     UI -->|Invoke Go bindings| Backend[Go App (Wails)]
     Backend --> Loader[Read Markdown file]
     Loader --> Renderer[Goldmark -> HTML document]
-    Renderer --> ThemeCSS[Load optional CSS from ~/.config/mdr/mdthemes]
-    ThemeCSS --> WebView[Display in WebView]
+    Renderer --> ThemePkg[internal/theme]
+    ThemePkg --> LocalThemes[~/.config/mdr/mdthemes/*.css]
+    ThemePkg --> EmbedThemes[Embedded FS: modman, nordic]
+    LocalThemes -->|Fallback| EmbedThemes
+    ThemePkg --> WebView[Display in WebView]
   ```
 
 ## ⚖️ Standards & Decisions
 
-- **Coding Conventions:** Keep changes minimal; viewer-only (no editor UI).
+- **Coding Conventions:** Keep changes minimal; viewer-only (no editor UI) for mdr.
 - **Key Decisions Log:** (Format: `YYYY-MM-DD: [Decision] - [Rationale]`)
   - 2025-12-15: Viewer-only app (no editor) - product scope is “render and display”.
   - 2025-12-17: User theme directory is `~/.config/mdr/mdthemes` - keeps user themes outside the app bundle and easy to customize.
+  - 2026-01-02: Embedded default themes (`modman`, `nordic`) in `internal/theme` - ensures basic themes are available without external files.

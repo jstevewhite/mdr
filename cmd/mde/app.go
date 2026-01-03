@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/jstevewhite/mdr/internal/config"
 	"github.com/jstevewhite/mdr/internal/files"
+	"github.com/jstevewhite/mdr/internal/mdeconfig"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -91,6 +91,26 @@ func (a *App) GetLaunchArgs() []string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return append([]string(nil), a.launchArgs...)
+}
+
+// LoadFile loads a file directly by path without showing a dialog
+func (a *App) LoadFile(path string) (string, error) {
+	path = files.NormalizePath(path)
+	if path == "" {
+		return "", fmt.Errorf("invalid file path")
+	}
+
+	content, err := files.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	a.mu.Lock()
+	a.currentPath = path
+	a.isDirty = false
+	a.mu.Unlock()
+
+	return content, nil
 }
 
 // OpenFile opens a file dialog and returns the file path and content
@@ -208,7 +228,8 @@ func (a *App) OpenInPreview() error {
 		return fmt.Errorf("no file open")
 	}
 
-	cmd := exec.Command("mdr", path)
+	// Use 'open -a' to reuse existing mdr window if available
+	cmd := exec.Command("open", "-a", "mdr", path)
 	err := cmd.Start()
 	if err != nil {
 		return fmt.Errorf("failed to launch mdr: %w", err)
@@ -219,49 +240,56 @@ func (a *App) OpenInPreview() error {
 
 // GetTheme returns the current editor theme
 func (a *App) GetTheme() string {
-	theme := config.GetTheme()
-	// Default to a basic theme if not set or if it's an mdr theme
-	if theme == "" || theme == "default" {
-		return "default"
-	}
-	return theme
+	return mdeconfig.GetTheme()
 }
 
-// SetTheme sets the editor theme
+// SetTheme sets the syntax theme
 func (a *App) SetTheme(theme string) error {
-	return config.SetTheme(theme)
+	return mdeconfig.SetTheme(theme)
 }
 
 // GetPalette returns the current palette
 func (a *App) GetPalette() string {
-	return config.GetPalette()
+	return mdeconfig.GetPalette()
 }
 
 // SetPalette sets the palette
 func (a *App) SetPalette(palette string) error {
-	return config.SetPalette(palette)
+	return mdeconfig.SetPalette(palette)
 }
 
 // GetFontScale returns the current font scale
 func (a *App) GetFontScale() int {
-	return config.GetFontScale()
+	return mdeconfig.GetFontScale()
 }
 
 // SetFontScale sets the font scale
 func (a *App) SetFontScale(scale int) error {
-	return config.SetFontScale(scale)
+	return mdeconfig.SetFontScale(scale)
 }
 
-// ListThemes returns available CodeMirror editor themes
-func (a *App) ListThemes() []string {
-	return []string{
-		"default",
-		"github-light",
-		"github-dark",
-		"monokai",
-		"dracula",
-		"nord",
-		"solarized-light",
-		"solarized-dark",
-	}
+// GetVimMode returns whether vim mode is enabled
+func (a *App) GetVimMode() bool {
+	return mdeconfig.GetVimMode()
+}
+
+// SetVimMode sets vim mode
+func (a *App) SetVimMode(enabled bool) error {
+	return mdeconfig.SetVimMode(enabled)
+}
+
+// GetWordWrap returns whether word wrap is enabled
+func (a *App) GetWordWrap() bool {
+	return mdeconfig.GetWordWrap()
+}
+
+// SetWordWrap sets word wrap
+func (a *App) SetWordWrap(enabled bool) error {
+	return mdeconfig.SetWordWrap(enabled)
+}
+
+// ListThemes returns available syntax themes.
+func (a *App) ListThemes() ([]string, error) {
+	// These must match the theme names supported by cmd/mde/frontend/src/editor.js
+	return []string{"default", "github", "monokai", "dracula", "nord", "solarized-dark", "solarized-light", "onedark"}, nil
 }

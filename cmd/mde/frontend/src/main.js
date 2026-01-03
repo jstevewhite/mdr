@@ -7,30 +7,53 @@ import {
     insertAtCursor,
     wrapSelection,
     setFontScale,
-    setTheme
+    setTheme,
+    setVimMode,
+    setWordWrap
 } from './editor.js'
+
+// Defensive: handle accidental duplicate inclusion (e.g. both dev + built assets wired)
+window.__mde_initialized = window.__mde_initialized || 0
+window.__mde_initialized += 1
+
+// Ensure init + dialogs are guarded *globally* (so it works even if this file is evaluated twice)
+window.__mde_booted = window.__mde_booted || false
+window.__mde_dialog_busy = window.__mde_dialog_busy || false
+
+function dialogTryLock() {
+    if (window.__mde_dialog_busy) return false
+    window.__mde_dialog_busy = true
+    return true
+}
+
+function dialogUnlock() {
+    window.__mde_dialog_busy = false
+}
 
 let editorView
 let currentPath = ''
 let isDirty = false
 let fontScale = 100
+let currentTheme = 'default'
+let currentPalette = 'dark'
+let vimMode = false
+let wordWrap = false
 
 // Initialize editor
 window.addEventListener('DOMContentLoaded', async () => {
-    // Load initial theme
-    let initialTheme = 'default'
-    try {
-        initialTheme = await window.go.main.App.GetTheme()
-    } catch (err) {
-        console.error('Failed to get initial theme:', err)
+    // If this script is loaded twice, only the first instance should wire UI events.
+    if (window.__mde_booted) {
+        console.warn('mde already booted; skipping duplicate DOMContentLoaded init')
+        return
     }
+    window.__mde_booted = true
 
-    // Create editor with theme
+    // Create editor
     const container = document.getElementById('editor-container')
     editorView = createEditor(container, '', {
         onChange: handleContentChange,
         onCursorChange: updateCursorPosition
-    }, initialTheme)
+    })
 
     // Load settings
     await loadSettings()
@@ -60,8 +83,8 @@ async function checkLaunchArgs() {
 
 async function openSpecificFile(path) {
     try {
-        const content = await window.go.main.App.OpenFile()
-        if (content) {
+        const content = await window.go.main.App.LoadFile(path)
+        if (content !== null && content !== undefined) {
             setEditorContent(editorView, content)
             currentPath = await window.go.main.App.GetCurrentPath()
             updateStatusFile()
@@ -74,14 +97,21 @@ async function openSpecificFile(path) {
 
 async function loadSettings() {
     try {
-        const theme = await window.go.main.App.GetTheme()
-        const palette = await window.go.main.App.GetPalette()
+        currentTheme = await window.go.main.App.GetTheme()
+        currentPalette = await window.go.main.App.GetPalette()
         fontScale = await window.go.main.App.GetFontScale()
+        vimMode = await window.go.main.App.GetVimMode()
+        wordWrap = await window.go.main.App.GetWordWrap()
 
-        document.getElementById('theme-select').value = theme
-        document.getElementById('palette-select').value = palette
-        document.body.className = `palette-${palette}`
+        document.getElementById('theme-select').value = currentTheme
+        document.getElementById('palette-select').value = currentPalette
+        document.getElementById('vim-mode-checkbox').checked = vimMode
+        document.getElementById('word-wrap-checkbox').checked = wordWrap
+        document.body.className = `palette-${currentPalette}`
         setFontScale(editorView, fontScale)
+        setTheme(editorView, currentTheme, currentPalette)
+        setVimMode(editorView, vimMode)
+        setWordWrap(editorView, wordWrap)
     } catch (err) {
         console.error('Failed to load settings:', err)
     }
@@ -96,7 +126,9 @@ async function loadThemes() {
         ).join('')
 
         const current = await window.go.main.App.GetTheme()
-        select.value = current
+        currentTheme = current || 'default'
+        select.value = currentTheme
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to load themes:', err)
     }
@@ -124,6 +156,10 @@ function setupToolbar() {
     document.getElementById('theme-select').addEventListener('change', changeTheme)
     document.getElementById('palette-select').addEventListener('change', changePalette)
 
+    // Vim mode
+    document.getElementById('vim-mode-checkbox').addEventListener('change', toggleVimMode)
+    document.getElementById('word-wrap-checkbox').addEventListener('change', toggleWordWrap)
+
     // Font
     document.getElementById('font-increase').addEventListener('click', () => adjustFont(10))
     document.getElementById('font-decrease').addEventListener('click', () => adjustFont(-10))
@@ -140,12 +176,23 @@ function setupKeyboardShortcuts() {
                 case 'i': e.preventDefault(); wrapSelection(editorView, '*', '*'); break
                 case 'k': e.preventDefault(); insertLink(); break
                 case '`': e.preventDefault(); wrapSelection(editorView, '`', '`'); break
+                case 'w': e.preventDefault(); toggleWordWrapFromShortcut(); break
             }
         }
     })
 }
 
+function toggleWordWrapFromShortcut() {
+    wordWrap = !wordWrap
+    document.getElementById('word-wrap-checkbox').checked = wordWrap
+    window.go.main.App.SetWordWrap(wordWrap).catch(err => {
+        console.error('Failed to toggle word wrap:', err)
+    })
+    setWordWrap(editorView, wordWrap)
+}
+
 async function openFile() {
+    if (!dialogTryLock()) return
     try {
         const content = await window.go.main.App.OpenFile()
         if (content !== null && content !== undefined) {
@@ -156,38 +203,57 @@ async function openFile() {
         }
     } catch (err) {
         console.error('Failed to open file:', err)
+    } finally {
+        dialogUnlock()
     }
 }
 
 async function saveFile() {
+    if (!dialogTryLock()) return
     try {
         const content = getEditorContent(editorView)
-        await window.go.main.App.SaveFile(content)
+
+        // If we don't have a path yet, treat Save as Save As.
+        const path = await window.go.main.App.GetCurrentPath()
+        if (!path) {
+            await window.go.main.App.SaveFileAs(content)
+            currentPath = await window.go.main.App.GetCurrentPath()
+            updateStatusFile()
+        } else {
+            await window.go.main.App.SaveFile(content)
+        }
+
         setDirty(false)
     } catch (err) {
         console.error('Failed to save file:', err)
         alert('Failed to save file: ' + err)
+    } finally {
+        dialogUnlock()
     }
 }
 
 async function openPreview() {
+    // Preview can call saveFile() first; don't take the lock until we actually launch preview.
     try {
-        // Save first if dirty
         if (isDirty) {
             await saveFile()
         }
+
+        if (!dialogTryLock()) return
         await window.go.main.App.OpenInPreview()
     } catch (err) {
         console.error('Failed to open preview:', err)
         alert('Failed to open preview. Make sure MDR is installed.')
+    } finally {
+        dialogUnlock()
     }
 }
 
 async function changeTheme(e) {
     try {
-        const themeName = e.target.value
-        await window.go.main.App.SetTheme(themeName)
-        setTheme(editorView, themeName)
+        currentTheme = e.target.value || 'default'
+        await window.go.main.App.SetTheme(currentTheme)
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to change theme:', err)
     }
@@ -195,10 +261,32 @@ async function changeTheme(e) {
 
 async function changePalette(e) {
     try {
-        await window.go.main.App.SetPalette(e.target.value)
-        document.body.className = `palette-${e.target.value}`
+        currentPalette = e.target.value || 'dark'
+        await window.go.main.App.SetPalette(currentPalette)
+        document.body.className = `palette-${currentPalette}`
+        setTheme(editorView, currentTheme, currentPalette)
     } catch (err) {
         console.error('Failed to change palette:', err)
+    }
+}
+
+async function toggleVimMode(e) {
+    try {
+        vimMode = e.target.checked
+        await window.go.main.App.SetVimMode(vimMode)
+        setVimMode(editorView, vimMode)
+    } catch (err) {
+        console.error('Failed to toggle vim mode:', err)
+    }
+}
+
+async function toggleWordWrap(e) {
+    try {
+        wordWrap = e.target.checked
+        await window.go.main.App.SetWordWrap(wordWrap)
+        setWordWrap(editorView, wordWrap)
+    } catch (err) {
+        console.error('Failed to toggle word wrap:', err)
     }
 }
 

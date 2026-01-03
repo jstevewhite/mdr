@@ -31,6 +31,7 @@ document.querySelector('#app').innerHTML = `
           <input type="checkbox" id="autoReload" class="auto-reload-checkbox">
           Auto-reload
         </label>
+        <button id="edit" class="btn" title="Edit in mde">Edit…</button>
         <button id="open" class="btn">Open…</button>
       </div>
       <div id="path" class="path"></div>
@@ -76,6 +77,7 @@ document.querySelector('#app').innerHTML = `
 
 const themeEl = document.getElementById('theme');
 const paletteEl = document.getElementById('palette');
+const editEl = document.getElementById('edit');
 const openEl = document.getElementById('open');
 const pathEl = document.getElementById('path');
 const previewEl = document.getElementById('preview');
@@ -131,7 +133,14 @@ function setControlsEnabled(enabled) {
   if (fontIncEl) fontIncEl.disabled = disabled;
   if (themeEl) themeEl.disabled = disabled;
   if (paletteEl) paletteEl.disabled = disabled;
+  updateEditButton();
   if (openEl) openEl.disabled = disabled;
+}
+
+function updateEditButton() {
+  if (editEl) {
+    editEl.disabled = !currentPath;
+  }
 }
 
 function setStatus(level, msg) {
@@ -536,6 +545,7 @@ async function openAndRender() {
     }
     currentPath = res.path;
     pathEl.textContent = currentPath;
+    updateEditButton();
     requestAnimationFrame(() => {
       setPreview(res.html, res.charCount, res.wordCount);
       renderTOC(res.toc);
@@ -583,7 +593,22 @@ async function rerender() {
   }
 }
 
+async function openInEditor() {
+  if (!currentPath) {
+    setStatus('error', 'No file open');
+    return;
+  }
+  try {
+    const { OpenInEditor } = await import('../wailsjs/go/main/App');
+    await OpenInEditor();
+  } catch (err) {
+    console.error('Failed to open in editor:', err);
+    setStatus('error', 'Failed to open in mde. Make sure mde is installed.');
+  }
+}
+
 openEl.addEventListener('click', openAndRender);
+editEl.addEventListener('click', openInEditor);
 
 tocToggleEl.addEventListener('click', toggleTOC);
 
@@ -979,6 +1004,7 @@ EventsOn('file-open', async (paths) => {
     }
     currentPath = p;
     pathEl.textContent = currentPath;
+    updateEditButton();
     await rerender();
 
     if (autoReloadEnabled && currentPath) {

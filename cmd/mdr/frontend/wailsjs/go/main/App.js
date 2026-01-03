@@ -62,6 +62,10 @@ export function OpenAndRender(arg1, arg2) {
   return window['go']['main']['App']['OpenAndRender'](arg1, arg2);
 }
 
+export function OpenInEditor() {
+  return window['go']['main']['App']['OpenInEditor']();
+}
+
 export function RenderFile(arg1, arg2) {
   return window['go']['main']['App']['RenderFile'](arg1, arg2);
 }

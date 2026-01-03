@@ -16,6 +16,11 @@
 
 ### Wails
 /build/bin
+/cmd/*/build/bin
+/cmd/*/frontend/node_modules
+/cmd/*/frontend/node_modules/**
+/cmd/*/frontend/dist
+/cmd/*/frontend/dist/**
 /frontend/dist
 **/node_modules
 **/frontend/dist
