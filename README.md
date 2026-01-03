@@ -12,7 +12,7 @@ There's an issue where it's slow to load using the UI in macOS. It's got somethi
 
 ## mde - Markdown Editor
 
-`mde` is a focused Markdown editor with syntax highlighting and live preview integration with `mdr`. Edit your Markdown with syntax coloring, then click Preview to see it rendered in `mdr`.
+`mde` is a focused Markdown editor with syntax highlighting and live preview integration with mdr. Edit your Markdown with syntax coloring, then click Preview to see it rendered in mdr.
 
 ## Features
 

@@ -7,12 +7,212 @@ import { searchKeymap } from '@codemirror/search'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { vim } from '@replit/codemirror-vim'
+import { linter, lintGutter } from '@codemirror/lint'
 
 const themeCompartment = new Compartment()
 const highlightCompartment = new Compartment()
 const vimCompartment = new Compartment()
 const wrapCompartment = new Compartment()
 const lintCompartment = new Compartment()
+
+const lintExtension = linter((view) => {
+	const content = view.state.doc.toString()
+	
+	if (!content.trim()) {
+		return []
+	}
+	
+	const diagnostics = []
+	const lines = content.split('\n')
+	
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i]
+		const lineNum = i + 1
+		const lineInfo = view.state.doc.line(lineNum)
+		const from = lineInfo.from
+		const to = lineInfo.to
+		
+		// MD018: No space after hash on ATX-style heading
+		const headingMatch = line.match(/^(\s{0,3})(#{1,6})([^\s#].*)$/)
+		if (headingMatch) {
+			const indent = headingMatch[1]
+			const hashes = headingMatch[2]
+			const rest = headingMatch[3]
+			diagnostics.push({
+				from: from,
+				to: to,
+				severity: 'warning',
+				message: 'MD018: No space after hash on ATX-style heading',
+				source: 'markdown-lint',
+				actions: [{
+					name: 'Add space',
+					apply(view, from, to) {
+						view.dispatch({
+							changes: { from, to, insert: `${indent}${hashes} ${rest}` }
+						})
+					}
+				}]
+			})
+		}
+		
+		// MD019: Multiple spaces after hash on ATX-style heading
+		const multiSpaceHeading = line.match(/^(\s{0,3})(#{1,6})\s{2,}(.*)$/)
+		if (multiSpaceHeading) {
+			const indent = multiSpaceHeading[1]
+			const hashes = multiSpaceHeading[2]
+			const rest = multiSpaceHeading[3]
+			diagnostics.push({
+				from: from,
+				to: to,
+				severity: 'info',
+				message: 'MD019: Multiple spaces after hash on ATX-style heading',
+				source: 'markdown-lint',
+				actions: [{
+					name: 'Fix spacing',
+					apply(view, from, to) {
+						view.dispatch({
+							changes: { from, to, insert: `${indent}${hashes} ${rest}` }
+						})
+					}
+				}]
+			})
+		}
+		
+		// MD009: Trailing spaces
+		if (line.match(/\s+$/) && line.length > 0) {
+			const trimmed = line.replace(/\s+$/, '')
+			diagnostics.push({
+				from: from + trimmed.length,
+				to: to,
+				severity: 'info',
+				message: 'MD009: Trailing spaces',
+				source: 'markdown-lint',
+				actions: [{
+					name: 'Remove',
+					apply(view, from, to) {
+						view.dispatch({
+							changes: { from, to, insert: '' }
+						})
+					}
+				}]
+			})
+		}
+		
+		// MD012: Multiple consecutive blank lines
+		if (i > 0 && line === '' && lines[i - 1] === '') {
+			let consecutiveBlankCount = 0
+			for (let j = i; j >= 0 && lines[j] === ''; j--) {
+				consecutiveBlankCount++
+			}
+			if (consecutiveBlankCount > 1 && lines[i - 1] === '') {
+				diagnostics.push({
+					from: from,
+					to: to,
+					severity: 'info',
+					message: 'MD012: Multiple consecutive blank lines',
+					source: 'markdown-lint',
+					actions: [{
+						name: 'Remove',
+						apply(view, from, to) {
+							// Remove the entire line including newline
+							view.dispatch({
+								changes: { from: from - 1, to: to }
+							})
+						}
+					}]
+				})
+			}
+		}
+		
+		// MD030: Spaces after list markers
+		const listMatch = line.match(/^(\s*)([*\-+]|\d+\.)\s{2,}(.*)$/)
+		if (listMatch) {
+			const indent = listMatch[1]
+			const marker = listMatch[2]
+			const rest = listMatch[3]
+			diagnostics.push({
+				from: from,
+				to: to,
+				severity: 'info',
+				message: 'MD030: Spaces after list markers should be consistent (use 1 space)',
+				source: 'markdown-lint',
+				actions: [{
+					name: 'Fix spacing',
+					apply(view, from, to) {
+						view.dispatch({
+							changes: { from, to, insert: `${indent}${marker} ${rest}` }
+						})
+					}
+				}]
+			})
+		}
+		
+		// MD031: Fenced code blocks should be surrounded by blank lines
+		if (line.match(/^```/) || line.match(/^~~~/) ) {
+			const isOpening = !line.match(/^```\s*$/) || line.match(/^```\w/)
+			const isClosing = line.match(/^```\s*$/) && i > 0 && !lines[i - 1].match(/^```/)
+			
+			if (isOpening && i > 0 && lines[i - 1].trim() !== '') {
+				diagnostics.push({
+					from: from,
+					to: to,
+					severity: 'info',
+					message: 'MD031: Fenced code blocks should be surrounded by blank lines',
+					source: 'markdown-lint',
+					actions: [{
+						name: 'Add blank line before',
+						apply(view, from, to) {
+							view.dispatch({
+								changes: { from: from, insert: '\n' }
+							})
+						}
+					}]
+				})
+			}
+			
+			if (isClosing && i < lines.length - 1 && lines[i + 1].trim() !== '') {
+				diagnostics.push({
+					from: from,
+					to: to,
+					severity: 'info',
+					message: 'MD031: Fenced code blocks should be surrounded by blank lines',
+					source: 'markdown-lint',
+					actions: [{
+						name: 'Add blank line after',
+						apply(view, from, to) {
+							view.dispatch({
+								changes: { from: to, insert: '\n' }
+							})
+						}
+					}]
+				})
+			}
+		}
+		
+		// MD047: Files should end with a single newline character
+		if (i === lines.length - 1 && line.length > 0) {
+			diagnostics.push({
+				from: to,
+				to: to,
+				severity: 'info',
+				message: 'MD047: Files should end with a single newline character',
+				source: 'markdown-lint',
+				actions: [{
+					name: 'Add newline',
+					apply(view, from, to) {
+						view.dispatch({
+							changes: { from: to, insert: '\n' }
+						})
+					}
+				}]
+			})
+		}
+	}
+	
+	return diagnostics
+}, {
+	delay: 500
+})
 
 function themeFor(name, palette) {
     const isDark = palette === 'dark' || palette === 'theme'
@@ -47,6 +247,41 @@ function themeFor(name, palette) {
         },
         ".cm-activeLineGutter": {
             backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+        },
+        ".cm-tooltip": {
+            backgroundColor: isDark ? "#252526" : "#ffffff",
+            color: isDark ? "#d4d4d4" : "#24292f",
+            border: isDark ? "1px solid #3e3e42" : "1px solid #d0d7de",
+            borderRadius: "6px",
+        },
+        ".cm-tooltip.cm-tooltip-lint": {
+            backgroundColor: isDark ? "#252526" : "#ffffff",
+            color: isDark ? "#d4d4d4" : "#24292f",
+            border: isDark ? "1px solid #3e3e42" : "1px solid #d0d7de",
+        },
+        ".cm-diagnostic": {
+            color: isDark ? "#d4d4d4" : "#24292f",
+        },
+        ".cm-diagnostic-error": {
+            borderLeft: "3px solid #f85149",
+        },
+        ".cm-diagnostic-warning": {
+            borderLeft: "3px solid #d29922",
+        },
+        ".cm-diagnostic-info": {
+            borderLeft: "3px solid #58a6ff",
+        },
+        ".cm-diagnosticAction": {
+            backgroundColor: isDark ? "#0d1117" : "#f6f8fa",
+            color: isDark ? "#58a6ff" : "#0969da",
+            border: isDark ? "1px solid #3e3e42" : "1px solid #d0d7de",
+            borderRadius: "4px",
+            padding: "2px 8px",
+            fontSize: "12px",
+            cursor: "pointer",
+        },
+        ".cm-diagnosticAction:hover": {
+            backgroundColor: isDark ? "#161b22" : "#eff1f3",
         },
     }
 
@@ -103,6 +338,27 @@ function themeFor(name, palette) {
                 backgroundColor: "#2d2e27",
                 color: "#75715e",
             },
+            ".cm-tooltip": {
+                ...base[".cm-tooltip"],
+                backgroundColor: "#2d2e27",
+                color: "#f8f8f2",
+                border: "1px solid #3e3e42",
+            },
+            ".cm-tooltip.cm-tooltip-lint": {
+                backgroundColor: "#2d2e27",
+                color: "#f8f8f2",
+            },
+            ".cm-diagnostic": {
+                color: "#f8f8f2",
+            },
+            ".cm-diagnosticAction": {
+                ...base[".cm-diagnosticAction"],
+                backgroundColor: "#1e1f1c",
+                color: "#a6e22e",
+            },
+            ".cm-diagnosticAction:hover": {
+                backgroundColor: "#383830",
+            },
         }
         return {
             theme: EditorView.theme(darkBase, { dark: true }),
@@ -138,6 +394,27 @@ function themeFor(name, palette) {
                 ...base[".cm-gutters"],
                 backgroundColor: "#21222c",
                 color: "#6272a4",
+            },
+            ".cm-tooltip": {
+                ...base[".cm-tooltip"],
+                backgroundColor: "#21222c",
+                color: "#f8f8f2",
+                border: "1px solid #44475a",
+            },
+            ".cm-tooltip.cm-tooltip-lint": {
+                backgroundColor: "#21222c",
+                color: "#f8f8f2",
+            },
+            ".cm-diagnostic": {
+                color: "#f8f8f2",
+            },
+            ".cm-diagnosticAction": {
+                ...base[".cm-diagnosticAction"],
+                backgroundColor: "#282a36",
+                color: "#50fa7b",
+            },
+            ".cm-diagnosticAction:hover": {
+                backgroundColor: "#44475a",
             },
         }
         return {
@@ -175,6 +452,27 @@ function themeFor(name, palette) {
                 backgroundColor: "#3b4252",
                 color: "#616e88",
             },
+            ".cm-tooltip": {
+                ...base[".cm-tooltip"],
+                backgroundColor: "#3b4252",
+                color: "#d8dee9",
+                border: "1px solid #4c566a",
+            },
+            ".cm-tooltip.cm-tooltip-lint": {
+                backgroundColor: "#3b4252",
+                color: "#d8dee9",
+            },
+            ".cm-diagnostic": {
+                color: "#d8dee9",
+            },
+            ".cm-diagnosticAction": {
+                ...base[".cm-diagnosticAction"],
+                backgroundColor: "#2e3440",
+                color: "#88c0d0",
+            },
+            ".cm-diagnosticAction:hover": {
+                backgroundColor: "#434c5e",
+            },
         }
         return {
             theme: EditorView.theme(nordBase, { dark: true }),
@@ -210,6 +508,27 @@ function themeFor(name, palette) {
                 ...base[".cm-gutters"],
                 backgroundColor: "#073642",
                 color: "#586e75",
+            },
+            ".cm-tooltip": {
+                ...base[".cm-tooltip"],
+                backgroundColor: "#073642",
+                color: "#839496",
+                border: "1px solid #094d5e",
+            },
+            ".cm-tooltip.cm-tooltip-lint": {
+                backgroundColor: "#073642",
+                color: "#839496",
+            },
+            ".cm-diagnostic": {
+                color: "#839496",
+            },
+            ".cm-diagnosticAction": {
+                ...base[".cm-diagnosticAction"],
+                backgroundColor: "#002b36",
+                color: "#268bd2",
+            },
+            ".cm-diagnosticAction:hover": {
+                backgroundColor: "#094d5e",
             },
         }
         return {
@@ -247,6 +566,27 @@ function themeFor(name, palette) {
                 backgroundColor: "#eee8d5",
                 color: "#93a1a1",
             },
+            ".cm-tooltip": {
+                ...base[".cm-tooltip"],
+                backgroundColor: "#eee8d5",
+                color: "#657b83",
+                border: "1px solid #d3cbb7",
+            },
+            ".cm-tooltip.cm-tooltip-lint": {
+                backgroundColor: "#eee8d5",
+                color: "#657b83",
+            },
+            ".cm-diagnostic": {
+                color: "#657b83",
+            },
+            ".cm-diagnosticAction": {
+                ...base[".cm-diagnosticAction"],
+                backgroundColor: "#fdf6e3",
+                color: "#268bd2",
+            },
+            ".cm-diagnosticAction:hover": {
+                backgroundColor: "#e4ddc7",
+            },
         }
         return {
             theme: EditorView.theme(solarizedLightBase, { dark: false }),
@@ -282,6 +622,27 @@ function themeFor(name, palette) {
                 ...base[".cm-gutters"],
                 backgroundColor: "#21252b",
                 color: "#5c6370",
+            },
+            ".cm-tooltip": {
+                ...base[".cm-tooltip"],
+                backgroundColor: "#21252b",
+                color: "#abb2bf",
+                border: "1px solid #3e4451",
+            },
+            ".cm-tooltip.cm-tooltip-lint": {
+                backgroundColor: "#21252b",
+                color: "#abb2bf",
+            },
+            ".cm-diagnostic": {
+                color: "#abb2bf",
+            },
+            ".cm-diagnosticAction": {
+                ...base[".cm-diagnosticAction"],
+                backgroundColor: "#282c34",
+                color: "#61afef",
+            },
+            ".cm-diagnosticAction:hover": {
+                backgroundColor: "#2c313a",
             },
         }
         return {
@@ -432,6 +793,6 @@ export function setWordWrap(view, enabled) {
 export function setLintEnabled(view, enabled) {
     if (!view) return
     view.dispatch({
-        effects: lintCompartment.reconfigure(enabled ? lintExtension : [])
+        effects: lintCompartment.reconfigure(enabled ? [lintExtension, lintGutter()] : [])
     })
 }
