@@ -56,9 +56,85 @@ func NewApp() *App {
 	return &App{}
 }
 
+// augmentPATH adds common tool locations to PATH for finding executables
+// This is necessary because GUI apps don't inherit the full shell PATH
+func augmentPATH() {
+	currentPath := os.Getenv("PATH")
+	homeDir, _ := os.UserHomeDir()
+
+	// Common locations for tools across platforms
+	additionalPaths := []string{
+		"/opt/homebrew/bin",      // Homebrew on Apple Silicon
+		"/opt/homebrew/sbin",
+		"/usr/local/bin",         // Homebrew on Intel Macs, common on Linux
+		"/usr/local/sbin",
+		"/snap/bin",              // Snap packages on Linux
+	}
+
+	// Add user home-relative paths if home directory is available
+	if homeDir != "" {
+		additionalPaths = append(additionalPaths,
+			filepath.Join(homeDir, ".local", "bin"), // User local installs on Linux
+		)
+	}
+
+	// Add TeX Live paths - check for latest version or common locations
+	texlivePaths := []string{
+		"/usr/local/texlive",     // Standard TeX Live installation
+		"/Library/TeX/texbin",    // MacTeX symlinks
+	}
+
+	for _, basePath := range texlivePaths {
+		if entries, err := os.ReadDir(basePath); err == nil {
+			// For /usr/local/texlive, find the latest year/version directory
+			if basePath == "/usr/local/texlive" {
+				for _, entry := range entries {
+					if entry.IsDir() {
+						binPath := filepath.Join(basePath, entry.Name(), "bin", "universal-darwin")
+						if _, err := os.Stat(binPath); err == nil {
+							additionalPaths = append(additionalPaths, binPath)
+						}
+						// Also check for architecture-specific bins on Linux
+						binPathArch := filepath.Join(basePath, entry.Name(), "bin", "x86_64-linux")
+						if _, err := os.Stat(binPathArch); err == nil {
+							additionalPaths = append(additionalPaths, binPathArch)
+						}
+						binPathArch = filepath.Join(basePath, entry.Name(), "bin", "aarch64-linux")
+						if _, err := os.Stat(binPathArch); err == nil {
+							additionalPaths = append(additionalPaths, binPathArch)
+						}
+					}
+				}
+			}
+		} else if _, err := os.Stat(basePath); err == nil {
+			// Direct path like /Library/TeX/texbin
+			additionalPaths = append(additionalPaths, basePath)
+		}
+	}
+
+	// Build new PATH by prepending additional paths that exist
+	var newPaths []string
+	for _, p := range additionalPaths {
+		if _, err := os.Stat(p); err == nil {
+			// Only add if not already in PATH
+			if !strings.Contains(currentPath, p) {
+				newPaths = append(newPaths, p)
+			}
+		}
+	}
+
+	if len(newPaths) > 0 {
+		newPath := strings.Join(newPaths, ":") + ":" + currentPath
+		os.Setenv("PATH", newPath)
+	}
+}
+
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
+	// Augment PATH to find tools like pandoc that may be in non-standard locations
+	augmentPATH()
+
 	a.mu.Lock()
 	a.ctx = ctx
 	pending := append([]string(nil), a.pendingFileOpens...)
