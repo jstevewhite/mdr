@@ -16,6 +16,7 @@
     "productVersion": "1.0.0",
     "copyright": "Copyright © 2024 Steve White",
     "comments": "Markdown Viewer",
+    "icon": "../../mdr.png",
     "fileAssociations": [
       {
         "ext": "md",

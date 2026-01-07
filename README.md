@@ -187,6 +187,14 @@ make install-mde    # Install mde only
    ```
    *Installs themes to `~/.config/mdr/mdthemes/`*
 
+## Application Icons
+
+Each application has its own distinct icon:
+- **mdr.png**: Icon for the Markdown viewer (mdr)
+- **mde.png**: Icon for the Markdown editor (mde)
+
+The icons are configured in each application's `wails.json` and are automatically embedded during the build process for both Linux and macOS. On macOS, the PNG icons are automatically converted to `.icns` format.
+
 ## Building & Packaging Notes
 
 ### Prerequisites (all platforms)
