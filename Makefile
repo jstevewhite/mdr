@@ -162,8 +162,7 @@ endif
 # Install themes to user config directory
 install_themes:
 	@mkdir -p "$$HOME/.config/mdr/mdthemes"
-	@cp -f internal/theme/embedded/modman.css internal/theme/embedded/nordic.css "$$HOME/.config/mdr/mdthemes/"
-	@echo "Installed themes to $$HOME/.config/mdr/mdthemes"
+	@echo "Created theme directory at $$HOME/.config/mdr/mdthemes"
 
 # Clean build artifacts
 clean:

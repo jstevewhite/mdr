@@ -1,5 +1,41 @@
 export namespace main {
 	
+	export class ExportFormat {
+	    id: string;
+	    name: string;
+	    extension: string;
+	    needsLatex: boolean;
+	    description: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportFormat(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.extension = source["extension"];
+	        this.needsLatex = source["needsLatex"];
+	        this.description = source["description"];
+	    }
+	}
+	export class ExportResult {
+	    success: boolean;
+	    path: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.success = source["success"];
+	        this.path = source["path"];
+	        this.error = source["error"];
+	    }
+	}
 	export class TOCItem {
 	    id: string;
 	    text: string;

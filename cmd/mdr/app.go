@@ -19,6 +19,22 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+// ExportFormat represents an available export format
+type ExportFormat struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Extension   string `json:"extension"`
+	NeedsLaTeX  bool   `json:"needsLatex"`
+	Description string `json:"description"`
+}
+
+// ExportResult represents the result of an export operation
+type ExportResult struct {
+	Success bool   `json:"success"`
+	Path    string `json:"path"`
+	Error   string `json:"error,omitempty"`
+}
+
 // App struct
 type App struct {
 	mu               sync.Mutex
@@ -31,6 +47,8 @@ type App struct {
 	watchedThemeName string
 	searchResult     SearchResult
 	currentDocument  string
+	pandocAvailable  bool
+	pdfAvailable     bool
 }
 
 // NewApp creates a new App application struct
@@ -59,7 +77,27 @@ func (a *App) startup(ctx context.Context) {
 	args = append(args, pending...)
 	a.mu.Lock()
 	a.launchArgs = args
+
+	pandocOk := false
+	pdfOk := false
+	if _, err := exec.LookPath("pandoc"); err == nil {
+		pandocOk = true
+		if _, err := exec.LookPath("pdflatex"); err == nil {
+			pdfOk = true
+		}
+	}
+	a.pandocAvailable = pandocOk
+	a.pdfAvailable = pdfOk
 	a.mu.Unlock()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		if !pandocOk {
+			a.emitStatus("error", "pandoc-not-found", "Export disabled: "+a.GetPandocInstallInstructions())
+		} else if !pdfOk {
+			a.emitStatus("warning", "pandoc-no-latex", "PDF export requires LaTeX (pdflatex)")
+		}
+	}()
 }
 
 func (a *App) handleFileOpen(filePaths []string) {
@@ -685,4 +723,122 @@ func (a *App) SetCurrentDocument(content string) {
 	a.mu.Lock()
 	a.currentDocument = content
 	a.mu.Unlock()
+}
+
+// CheckPandocAvailable checks if pandoc is installed
+func (a *App) CheckPandocAvailable() (bool, error) {
+	_, err := exec.LookPath("pandoc")
+	return err == nil, nil
+}
+
+func (a *App) CheckPDFAvailable() (bool, error) {
+	_, err := exec.LookPath("pdflatex")
+	return err == nil, nil
+}
+
+func (a *App) GetExportFormats() ([]ExportFormat, error) {
+	formats := []ExportFormat{
+		{ID: "html", Name: "HTML", Extension: ".html", NeedsLaTeX: false, Description: "Web page"},
+		{ID: "pdf", Name: "PDF", Extension: ".pdf", NeedsLaTeX: true, Description: "Portable Document"},
+		{ID: "docx", Name: "Word", Extension: ".docx", NeedsLaTeX: false, Description: "Microsoft Word"},
+		{ID: "epub", Name: "EPUB", Extension: ".epub", NeedsLaTeX: false, Description: "E-book"},
+		{ID: "odt", Name: "ODT", Extension: ".odt", NeedsLaTeX: false, Description: "OpenDocument"},
+		{ID: "rtf", Name: "RTF", Extension: ".rtf", NeedsLaTeX: false, Description: "Rich Text"},
+	}
+	return formats, nil
+}
+
+func (a *App) ExportFile(inputPath, format, outputPath string) (ExportResult, error) {
+	a.mu.Lock()
+	pandocOk := a.pandocAvailable
+	pdfOk := a.pdfAvailable
+	a.mu.Unlock()
+
+	if !pandocOk {
+		return ExportResult{Success: false, Error: "pandoc not available"}, nil
+	}
+
+	inputPath = files.NormalizePath(inputPath)
+	if err := files.EnforceFileLimit(inputPath, config.GetMaxFileBytes()); err != nil {
+		return ExportResult{Success: false, Error: err.Error()}, nil
+	}
+
+	if format == "pdf" && !pdfOk {
+		return ExportResult{Success: false, Error: "PDF export requires LaTeX (pdflatex)"}, nil
+	}
+
+	args := []string{inputPath, "-o", outputPath}
+
+	cmd := exec.Command("pandoc", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return ExportResult{Success: false, Error: fmt.Sprintf("pandoc failed: %w\nOutput: %s", err, string(output))}, nil
+	}
+
+	return ExportResult{Success: true, Path: outputPath}, nil
+}
+
+func (a *App) SelectExportDirectory(defaultPath string) (string, error) {
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:            "Select export location",
+		DefaultDirectory: defaultPath,
+	})
+}
+
+func (a *App) GetPandocInstallInstructions() string {
+	a.mu.Lock()
+	ctx := a.ctx
+	a.mu.Unlock()
+
+	if ctx == nil {
+		return "Visit https://pandoc.org/installing.html"
+	}
+
+	env := runtime.Environment(ctx)
+	switch env.Platform {
+	case "darwin":
+		return "Install with: brew install pandoc"
+	case "linux":
+		return "Install with: apt install pandoc (or your distro's equivalent)"
+	case "windows":
+		return "Download from: https://pandoc.org/installing.html"
+	default:
+		return "Visit https://pandoc.org/installing.html"
+	}
+}
+
+// OpenURL opens a URL in the default browser
+func (a *App) OpenURL(url string) error {
+	a.mu.Lock()
+	ctx := a.ctx
+	a.mu.Unlock()
+
+	if ctx == nil {
+		return fmt.Errorf("context not available")
+	}
+	runtime.BrowserOpenURL(ctx, url)
+	return nil
+}
+
+// OpenFile opens a local file with system default program
+func (a *App) OpenFile(path string) error {
+	a.mu.Lock()
+	ctx := a.ctx
+	a.mu.Unlock()
+
+	var cmd *exec.Cmd
+
+	env := runtime.Environment(ctx)
+	switch env.Platform {
+	case "darwin":
+		cmd = exec.Command("open", path)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", path)
+	case "linux":
+		cmd = exec.Command("xdg-open", path)
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
+	return cmd.Start()
 }

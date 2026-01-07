@@ -1,7 +1,7 @@
 import './style.css';
 import './app.css';
 
-import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive } from '../wailsjs/go/main/App';
+import { GetAutoReload, GetFontScale, GetLaunchArgs, GetPalette, GetTheme, GetTOCPinned, GetTOCVisible, ListThemes, OpenAndRender, RenderFileWithPaletteAndTOC, SetAutoReload, SetFontScale, SetPalette, SetTheme, SetTOCPinned, SetTOCVisible, StartWatchingFile, StopWatchingFile, SearchDocument, NavigateSearch, ClearSearch, GetSearchCaseSensitive, SetSearchCaseSensitive, CheckPandocAvailable, ExportFile, GetExportFormats, SelectExportDirectory, OpenURL, OpenFile } from '../wailsjs/go/main/App';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 
 document.querySelector('#app').innerHTML = `
@@ -32,6 +32,7 @@ document.querySelector('#app').innerHTML = `
           Auto-reload
         </label>
         <button id="edit" class="btn" title="Edit in mde">Edit…</button>
+        <button id="export" class="btn" title="Export file">Export…</button>
         <button id="open" class="btn">Open…</button>
       </div>
       <div id="path" class="path"></div>
@@ -78,6 +79,7 @@ document.querySelector('#app').innerHTML = `
 const themeEl = document.getElementById('theme');
 const paletteEl = document.getElementById('palette');
 const editEl = document.getElementById('edit');
+const exportEl = document.getElementById('export');
 const openEl = document.getElementById('open');
 const pathEl = document.getElementById('path');
 const previewEl = document.getElementById('preview');
@@ -120,6 +122,8 @@ let autoReloadEnabled = false;
 let tocVisible = false;
 let tocPinned = false;
 let currentTOC = [];
+let exportEnabled = false;
+let exportFormats = [];
 
 // Search state
 let searchOpen = false;
@@ -134,6 +138,7 @@ function setControlsEnabled(enabled) {
   if (themeEl) themeEl.disabled = disabled;
   if (paletteEl) paletteEl.disabled = disabled;
   updateEditButton();
+  updateExportButton();
   if (openEl) openEl.disabled = disabled;
 }
 
@@ -143,6 +148,87 @@ function updateEditButton() {
   }
 }
 
+function updateExportButton() {
+  if (exportEl) {
+    exportEl.disabled = !exportEnabled || !currentPath;
+    exportEl.title = exportEnabled
+      ? 'Export file (Cmd+E)'
+      : 'Export disabled: Pandoc not installed';
+  }
+}
+
+function showExportDialog() {
+  if (!exportEnabled) {
+    setStatus('error', 'Export disabled: Pandoc not installed');
+    return;
+  }
+
+  const formatHtml = exportFormats.map(f =>
+    `<option value="${f.id}">${f.name} (${f.description})</option>`
+  ).join('');
+
+  const html = `
+    <div id="exportModal" class="modal">
+      <div class="modal-content">
+        <h3>Export Document</h3>
+        <label for="exportFormat">Format:</label>
+        <select id="exportFormat">${formatHtml}</select>
+        <div class="modal-buttons">
+          <button id="exportCancel" class="btn">Cancel</button>
+          <button id="exportConfirm" class="btn btn-primary">Export</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  document.getElementById('exportCancel').addEventListener('click', closeExportDialog);
+  document.getElementById('exportConfirm').addEventListener('click', performExport);
+  document.getElementById('exportFormat').focus();
+}
+
+function closeExportDialog() {
+  const modal = document.getElementById('exportModal');
+  if (modal) modal.remove();
+}
+
+async function performExport() {
+  const formatSelect = document.getElementById('exportFormat');
+  const format = formatSelect.value;
+  const formatInfo = exportFormats.find(f => f.id === format);
+
+  closeExportDialog();
+
+  if (!formatInfo) return;
+
+  try {
+    const baseName = currentPath.replace(/\.[^/.]+$/, '');
+    const defaultFile = baseName + formatInfo.extension;
+
+    const dirPath = await SelectExportDirectory(currentPath.substring(0, currentPath.lastIndexOf('/')));
+
+    if (!dirPath) {
+      setStatus('info', 'Export cancelled');
+      return;
+    }
+
+    const outputPath = dirPath + '/' + defaultFile.replace(/^.*[\/\\]/, '');
+
+    setStatus('info', `Exporting to ${formatInfo.name}...`);
+
+    const result = await ExportFile(currentPath, format, outputPath);
+
+    if (result.success) {
+      setStatus('info', `Exported to ${result.path}`);
+    } else {
+      setStatus('error', `Export failed: ${result.error}`);
+    }
+  } catch (err) {
+    console.error('Export error:', err);
+    setStatus('error', `Export failed: ${formatError(err)}`);
+  }
+}
 function setStatus(level, msg) {
   const levelVal = level || 'info';
   const message = msg || '';
@@ -408,13 +494,50 @@ function setPreview(html, charCount, wordCount) {
         previewEl.contentWindow.document.open();
         previewEl.contentWindow.document.write(doc);
         previewEl.contentWindow.document.close();
+
+        // Add link click handler to intercept links
+        const iframeDoc = previewEl.contentWindow.document;
+        iframeDoc.addEventListener('click', async (e) => {
+          const link = e.target.closest('a');
+          if (!link) return;
+
+          const href = link.getAttribute('href');
+          if (!href) return;
+
+          e.preventDefault();
+
+          // Check if it's an external URL (http, https, etc.)
+          if (/^https?:\/\//i.test(href)) {
+            try {
+              await OpenURL(href);
+            } catch (err) {
+              console.error('Failed to open URL:', err);
+            }
+          }
+          // Check if it's a file:// URL or absolute path
+          else if (/^file:\/\//i.test(href) || /^[a-zA-Z]:\\\\/.test(href) || /^\/[a-zA-Z]/.test(href)) {
+            try {
+              await OpenFile(href);
+            } catch (err) {
+              console.error('Failed to open file:', err);
+            }
+          }
+          // Internal anchor links (starting with #) should scroll within the document
+          else if (href.startsWith('#')) {
+            const targetId = href.substring(1);
+            const targetEl = iframeDoc.getElementById(targetId);
+            if (targetEl) {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        });
       }
     } catch (e) {
     }
   };
 
   previewEl.srcdoc = doc;
-  
+
   // Display character and word count if provided
   if (charCount !== undefined && wordCount !== undefined) {
     setStatus('info', `${wordCount.toLocaleString()} words, ${charCount.toLocaleString()} chars`);
@@ -609,6 +732,9 @@ async function openInEditor() {
 
 openEl.addEventListener('click', openAndRender);
 editEl.addEventListener('click', openInEditor);
+if (exportEl) {
+  exportEl.addEventListener('click', showExportDialog);
+}
 
 tocToggleEl.addEventListener('click', toggleTOC);
 
@@ -783,6 +909,16 @@ async function renderInitialArgs() {
     }
 
     try {
+      exportEnabled = await CheckPandocAvailable();
+      if (exportEnabled) {
+        exportFormats = await GetExportFormats();
+      }
+      updateExportButton();
+    } catch (err) {
+      console.error(err);
+    }
+
+    try {
       const savedTOCVisible = await GetTOCVisible();
       tocVisible = savedTOCVisible;
       if (savedTOCVisible) {
@@ -927,6 +1063,10 @@ function handleKeyboardShortcuts(e) {
         e.preventDefault();
         openAndRender();
         setStatus('info', `Opened file (${modifierKey === 'metaKey' ? 'Cmd' : 'Ctrl'}+O)`);
+    }
+    else if (e.key === 'e' && e[modifierKey]) {
+        e.preventDefault();
+        showExportDialog();
     }
     else if (e.key === 'r' && e[modifierKey]) {
         e.preventDefault();

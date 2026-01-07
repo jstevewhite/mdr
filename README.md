@@ -28,6 +28,7 @@ There's an issue where it's slow to load using the UI in macOS. It's got somethi
 - **Mermaid diagram support** for flowcharts, sequence diagrams, and more
 - **Edit button** to open current file in mde
 - **Search functionality** with case-sensitive option
+- **Export functionality** via Pandoc to PDF, DOCX, HTML, EPUB, ODT, RTF
 
 ### mde (Editor)
 - Syntax-highlighted Markdown editing with CodeMirror

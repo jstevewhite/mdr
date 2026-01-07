@@ -70,6 +70,22 @@
     border-color: #58a6ff;
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: #238636;
+    border-color: #238636;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2ea043;
+    border-color: #2ea043;
+}
+
 .path {
     max-width: 55vw;
     overflow: hidden;
@@ -456,6 +472,127 @@
 
 .palette-dark .search-close-btn:hover {
     color: #c9d1d9;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 24px;
+    min-width: 400px;
+    max-width: 500px;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #c9d1d9;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 8px;
+    color: #8b949e;
+}
+
+.modal-content select {
+    width: 100%;
+    margin-bottom: 24px;
+    height: 40px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+    color: #c9d1d9;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.light-theme .modal-content {
+    background: #ffffff;
+    border-color: #d0d7de;
+}
+
+.light-theme .modal-content h3 {
+    color: #1f2328;
+}
+
+.light-theme .modal-content label {
+    color: #57606a;
+}
+
+.light-theme .modal-content select {
+    background: #f6f8fa;
+    border-color: #d0d7de;
+    color: #1f2328;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 24px;
+    min-width: 400px;
+    max-width: 500px;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #c9d1d9;
+}
+
+.modal-content label {
+    display: block;
+    margin-bottom: 8px;
+    color: #8b949e;
+}
+
+.modal-content select {
+    width: 100%;
+    margin-bottom: 24px;
+    height: 40px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+    color: #c9d1d9;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
 }
 
 /* Search highlight styles */
