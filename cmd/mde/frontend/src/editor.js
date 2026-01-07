@@ -16,202 +16,202 @@ const wrapCompartment = new Compartment()
 const lintCompartment = new Compartment()
 
 const lintExtension = linter((view) => {
-	const content = view.state.doc.toString()
-	
-	if (!content.trim()) {
-		return []
-	}
-	
-	const diagnostics = []
-	const lines = content.split('\n')
-	
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i]
-		const lineNum = i + 1
-		const lineInfo = view.state.doc.line(lineNum)
-		const from = lineInfo.from
-		const to = lineInfo.to
-		
-		// MD018: No space after hash on ATX-style heading
-		const headingMatch = line.match(/^(\s{0,3})(#{1,6})([^\s#].*)$/)
-		if (headingMatch) {
-			const indent = headingMatch[1]
-			const hashes = headingMatch[2]
-			const rest = headingMatch[3]
-			diagnostics.push({
-				from: from,
-				to: to,
-				severity: 'warning',
-				message: 'MD018: No space after hash on ATX-style heading',
-				source: 'markdown-lint',
-				actions: [{
-					name: 'Add space',
-					apply(view, from, to) {
-						view.dispatch({
-							changes: { from, to, insert: `${indent}${hashes} ${rest}` }
-						})
-					}
-				}]
-			})
-		}
-		
-		// MD019: Multiple spaces after hash on ATX-style heading
-		const multiSpaceHeading = line.match(/^(\s{0,3})(#{1,6})\s{2,}(.*)$/)
-		if (multiSpaceHeading) {
-			const indent = multiSpaceHeading[1]
-			const hashes = multiSpaceHeading[2]
-			const rest = multiSpaceHeading[3]
-			diagnostics.push({
-				from: from,
-				to: to,
-				severity: 'info',
-				message: 'MD019: Multiple spaces after hash on ATX-style heading',
-				source: 'markdown-lint',
-				actions: [{
-					name: 'Fix spacing',
-					apply(view, from, to) {
-						view.dispatch({
-							changes: { from, to, insert: `${indent}${hashes} ${rest}` }
-						})
-					}
-				}]
-			})
-		}
-		
-		// MD009: Trailing spaces
-		if (line.match(/\s+$/) && line.length > 0) {
-			const trimmed = line.replace(/\s+$/, '')
-			diagnostics.push({
-				from: from + trimmed.length,
-				to: to,
-				severity: 'info',
-				message: 'MD009: Trailing spaces',
-				source: 'markdown-lint',
-				actions: [{
-					name: 'Remove',
-					apply(view, from, to) {
-						view.dispatch({
-							changes: { from, to, insert: '' }
-						})
-					}
-				}]
-			})
-		}
-		
-		// MD012: Multiple consecutive blank lines
-		if (i > 0 && line === '' && lines[i - 1] === '') {
-			let consecutiveBlankCount = 0
-			for (let j = i; j >= 0 && lines[j] === ''; j--) {
-				consecutiveBlankCount++
-			}
-			if (consecutiveBlankCount > 1 && lines[i - 1] === '') {
-				diagnostics.push({
-					from: from,
-					to: to,
-					severity: 'info',
-					message: 'MD012: Multiple consecutive blank lines',
-					source: 'markdown-lint',
-					actions: [{
-						name: 'Remove',
-						apply(view, from, to) {
-							// Remove the entire line including newline
-							view.dispatch({
-								changes: { from: from - 1, to: to }
-							})
-						}
-					}]
-				})
-			}
-		}
-		
-		// MD030: Spaces after list markers
-		const listMatch = line.match(/^(\s*)([*\-+]|\d+\.)\s{2,}(.*)$/)
-		if (listMatch) {
-			const indent = listMatch[1]
-			const marker = listMatch[2]
-			const rest = listMatch[3]
-			diagnostics.push({
-				from: from,
-				to: to,
-				severity: 'info',
-				message: 'MD030: Spaces after list markers should be consistent (use 1 space)',
-				source: 'markdown-lint',
-				actions: [{
-					name: 'Fix spacing',
-					apply(view, from, to) {
-						view.dispatch({
-							changes: { from, to, insert: `${indent}${marker} ${rest}` }
-						})
-					}
-				}]
-			})
-		}
-		
-		// MD031: Fenced code blocks should be surrounded by blank lines
-		if (line.match(/^```/) || line.match(/^~~~/) ) {
-			const isOpening = !line.match(/^```\s*$/) || line.match(/^```\w/)
-			const isClosing = line.match(/^```\s*$/) && i > 0 && !lines[i - 1].match(/^```/)
-			
-			if (isOpening && i > 0 && lines[i - 1].trim() !== '') {
-				diagnostics.push({
-					from: from,
-					to: to,
-					severity: 'info',
-					message: 'MD031: Fenced code blocks should be surrounded by blank lines',
-					source: 'markdown-lint',
-					actions: [{
-						name: 'Add blank line before',
-						apply(view, from, to) {
-							view.dispatch({
-								changes: { from: from, insert: '\n' }
-							})
-						}
-					}]
-				})
-			}
-			
-			if (isClosing && i < lines.length - 1 && lines[i + 1].trim() !== '') {
-				diagnostics.push({
-					from: from,
-					to: to,
-					severity: 'info',
-					message: 'MD031: Fenced code blocks should be surrounded by blank lines',
-					source: 'markdown-lint',
-					actions: [{
-						name: 'Add blank line after',
-						apply(view, from, to) {
-							view.dispatch({
-								changes: { from: to, insert: '\n' }
-							})
-						}
-					}]
-				})
-			}
-		}
-		
-		// MD047: Files should end with a single newline character
-		if (i === lines.length - 1 && line.length > 0) {
-			diagnostics.push({
-				from: to,
-				to: to,
-				severity: 'info',
-				message: 'MD047: Files should end with a single newline character',
-				source: 'markdown-lint',
-				actions: [{
-					name: 'Add newline',
-					apply(view, from, to) {
-						view.dispatch({
-							changes: { from: to, insert: '\n' }
-						})
-					}
-				}]
-			})
-		}
-	}
-	
-	return diagnostics
+    const content = view.state.doc.toString()
+
+    if (!content.trim()) {
+        return []
+    }
+
+    const diagnostics = []
+    const lines = content.split('\n')
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        const lineNum = i + 1
+        const lineInfo = view.state.doc.line(lineNum)
+        const from = lineInfo.from
+        const to = lineInfo.to
+
+        // MD018: No space after hash on ATX-style heading
+        const headingMatch = line.match(/^(\s{0,3})(#{1,6})([^\s#].*)$/)
+        if (headingMatch) {
+            const indent = headingMatch[1]
+            const hashes = headingMatch[2]
+            const rest = headingMatch[3]
+            diagnostics.push({
+                from: from,
+                to: to,
+                severity: 'warning',
+                message: 'MD018: No space after hash on ATX-style heading',
+                source: 'markdown-lint',
+                actions: [{
+                    name: 'Add space',
+                    apply(view, from, to) {
+                        view.dispatch({
+                            changes: { from, to, insert: `${indent}${hashes} ${rest}` }
+                        })
+                    }
+                }]
+            })
+        }
+
+        // MD019: Multiple spaces after hash on ATX-style heading
+        const multiSpaceHeading = line.match(/^(\s{0,3})(#{1,6})\s{2,}(.*)$/)
+        if (multiSpaceHeading) {
+            const indent = multiSpaceHeading[1]
+            const hashes = multiSpaceHeading[2]
+            const rest = multiSpaceHeading[3]
+            diagnostics.push({
+                from: from,
+                to: to,
+                severity: 'info',
+                message: 'MD019: Multiple spaces after hash on ATX-style heading',
+                source: 'markdown-lint',
+                actions: [{
+                    name: 'Fix spacing',
+                    apply(view, from, to) {
+                        view.dispatch({
+                            changes: { from, to, insert: `${indent}${hashes} ${rest}` }
+                        })
+                    }
+                }]
+            })
+        }
+
+        // MD009: Trailing spaces
+        if (line.match(/\s+$/) && line.length > 0) {
+            const trimmed = line.replace(/\s+$/, '')
+            diagnostics.push({
+                from: from + trimmed.length,
+                to: to,
+                severity: 'info',
+                message: 'MD009: Trailing spaces',
+                source: 'markdown-lint',
+                actions: [{
+                    name: 'Remove',
+                    apply(view, from, to) {
+                        view.dispatch({
+                            changes: { from, to, insert: '' }
+                        })
+                    }
+                }]
+            })
+        }
+
+        // MD012: Multiple consecutive blank lines
+        if (i > 0 && line === '' && lines[i - 1] === '') {
+            let consecutiveBlankCount = 0
+            for (let j = i; j >= 0 && lines[j] === ''; j--) {
+                consecutiveBlankCount++
+            }
+            if (consecutiveBlankCount > 1 && lines[i - 1] === '') {
+                diagnostics.push({
+                    from: from,
+                    to: to,
+                    severity: 'info',
+                    message: 'MD012: Multiple consecutive blank lines',
+                    source: 'markdown-lint',
+                    actions: [{
+                        name: 'Remove',
+                        apply(view, from, to) {
+                            // Remove the entire line including newline
+                            view.dispatch({
+                                changes: { from: from - 1, to: to }
+                            })
+                        }
+                    }]
+                })
+            }
+        }
+
+        // MD030: Spaces after list markers
+        const listMatch = line.match(/^(\s*)([*\-+]|\d+\.)\s{2,}(.*)$/)
+        if (listMatch) {
+            const indent = listMatch[1]
+            const marker = listMatch[2]
+            const rest = listMatch[3]
+            diagnostics.push({
+                from: from,
+                to: to,
+                severity: 'info',
+                message: 'MD030: Spaces after list markers should be consistent (use 1 space)',
+                source: 'markdown-lint',
+                actions: [{
+                    name: 'Fix spacing',
+                    apply(view, from, to) {
+                        view.dispatch({
+                            changes: { from, to, insert: `${indent}${marker} ${rest}` }
+                        })
+                    }
+                }]
+            })
+        }
+
+        // MD031: Fenced code blocks should be surrounded by blank lines
+        if (line.match(/^```/) || line.match(/^~~~/)) {
+            const isOpening = !line.match(/^```\s*$/) || line.match(/^```\w/)
+            const isClosing = line.match(/^```\s*$/) && i > 0 && !lines[i - 1].match(/^```/)
+
+            if (isOpening && i > 0 && lines[i - 1].trim() !== '') {
+                diagnostics.push({
+                    from: from,
+                    to: to,
+                    severity: 'info',
+                    message: 'MD031: Fenced code blocks should be surrounded by blank lines',
+                    source: 'markdown-lint',
+                    actions: [{
+                        name: 'Add blank line before',
+                        apply(view, from, to) {
+                            view.dispatch({
+                                changes: { from: from, insert: '\n' }
+                            })
+                        }
+                    }]
+                })
+            }
+
+            if (isClosing && i < lines.length - 1 && lines[i + 1].trim() !== '') {
+                diagnostics.push({
+                    from: from,
+                    to: to,
+                    severity: 'info',
+                    message: 'MD031: Fenced code blocks should be surrounded by blank lines',
+                    source: 'markdown-lint',
+                    actions: [{
+                        name: 'Add blank line after',
+                        apply(view, from, to) {
+                            view.dispatch({
+                                changes: { from: to, insert: '\n' }
+                            })
+                        }
+                    }]
+                })
+            }
+        }
+
+        // MD047: Files should end with a single newline character
+        if (i === lines.length - 1 && line.length > 0) {
+            diagnostics.push({
+                from: to,
+                to: to,
+                severity: 'info',
+                message: 'MD047: Files should end with a single newline character',
+                source: 'markdown-lint',
+                actions: [{
+                    name: 'Add newline',
+                    apply(view, from, to) {
+                        view.dispatch({
+                            changes: { from: to, insert: '\n' }
+                        })
+                    }
+                }]
+            })
+        }
+    }
+
+    return diagnostics
 }, {
-	delay: 500
+    delay: 500
 })
 
 function themeFor(name, palette) {
@@ -289,6 +289,7 @@ function themeFor(name, palette) {
     if (name === 'github') {
         const style = HighlightStyle.define([
             { tag: tags.heading, color: "#0969da", fontWeight: "bold" },
+            { tag: tags.processingInstruction, color: "#6272a4", fontWeight: "bold" },
             { tag: tags.strong, fontWeight: "bold" },
             { tag: tags.emphasis, fontStyle: "italic" },
             { tag: tags.link, color: "#0969da", textDecoration: "underline" },
@@ -305,7 +306,7 @@ function themeFor(name, palette) {
         ])
         return {
             theme: EditorView.theme(base, { dark: false }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
@@ -362,13 +363,14 @@ function themeFor(name, palette) {
         }
         return {
             theme: EditorView.theme(darkBase, { dark: true }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
     if (name === 'dracula') {
         const style = HighlightStyle.define([
             { tag: tags.heading, color: "#50fa7b", fontWeight: "bold" },
+            { tag: tags.processingInstruction, color: "#79cfdeff", fontWeight: "bold" },
             { tag: tags.strong, fontWeight: "bold" },
             { tag: tags.emphasis, fontStyle: "italic" },
             { tag: tags.link, color: "#8be9fd", textDecoration: "underline" },
@@ -419,7 +421,7 @@ function themeFor(name, palette) {
         }
         return {
             theme: EditorView.theme(draculaBase, { dark: true }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
@@ -476,7 +478,7 @@ function themeFor(name, palette) {
         }
         return {
             theme: EditorView.theme(nordBase, { dark: true }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
@@ -533,7 +535,7 @@ function themeFor(name, palette) {
         }
         return {
             theme: EditorView.theme(solarizedBase, { dark: true }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
@@ -590,7 +592,7 @@ function themeFor(name, palette) {
         }
         return {
             theme: EditorView.theme(solarizedLightBase, { dark: false }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
@@ -647,13 +649,14 @@ function themeFor(name, palette) {
         }
         return {
             theme: EditorView.theme(onedarkBase, { dark: true }),
-            highlight: syntaxHighlighting(style, { fallback: true }),
+            highlight: syntaxHighlighting(style),
         }
     }
 
     // default
     const style = HighlightStyle.define([
         { tag: tags.heading, color: isDark ? "#569cd6" : "#0969da", fontWeight: "bold" },
+        { tag: tags.processingInstruction, color: isDark ? "#79cfde" : "#0550ae", fontWeight: "bold" },
         { tag: tags.strong, fontWeight: "bold" },
         { tag: tags.emphasis, fontStyle: "italic" },
         { tag: tags.link, color: isDark ? "#4fc1ff" : "#0969da", textDecoration: "underline" },
@@ -663,10 +666,14 @@ function themeFor(name, palette) {
         { tag: tags.atom, color: isDark ? "#dcdcaa" : "#0550ae" },
         { tag: tags.number, color: isDark ? "#b5cea8" : "#0550ae" },
         { tag: tags.bool, color: isDark ? "#569cd6" : "#0550ae" },
+        { tag: tags.variableName, color: isDark ? "#d4d4d4" : "#24292f" },
+        { tag: tags.function(tags.variableName), color: isDark ? "#dcdcaa" : "#8250df" },
+        { tag: tags.typeName, color: isDark ? "#4ec9b0" : "#953800" },
+        { tag: tags.punctuation, color: isDark ? "#d4d4d4" : "#24292f" },
     ])
     return {
         theme: EditorView.theme(base, { dark: isDark }),
-        highlight: syntaxHighlighting(style, { fallback: true }),
+        highlight: syntaxHighlighting(style),
     }
 }
 
