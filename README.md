@@ -48,9 +48,18 @@ There's an issue where it's slow to load using the UI in macOS. It's got somethi
 **mdr settings** are stored in `~/.config/mdr/mdr.conf`:
 - `maxFileSizeMB` (default 5) guards against loading huge files
 - `autoReload`, `tocVisible`, `tocPinned`, `palette`, `theme`, `fontScale`
+- `pandocPath` (optional) explicit path to pandoc executable
+- `pdflatexPath` (optional) explicit path to pdflatex executable
 
 **mde settings** are stored in `~/.config/mde/mde.conf`:
 - `palette`, `theme`, `fontScale`, `wordWrap`, `vimMode`
+
+**Example configuration for custom tool paths:**
+```ini
+# ~/.config/mdr/mdr.conf
+pandocPath=/opt/homebrew/bin/pandoc
+pdflatexPath=/usr/local/texlive/2025basic/bin/universal-darwin/pdflatex
+```
 
 ## Mermaid Diagrams
 

@@ -56,6 +56,21 @@ func NewApp() *App {
 	return &App{}
 }
 
+// findTool attempts to find a tool, first by checking the config for an explicit path,
+// then by using exec.LookPath. Returns the path and whether it was found.
+func findTool(toolName string, configPath string) (string, bool) {
+	// First check if an explicit path is configured
+	if configPath != "" {
+		if _, err := os.Stat(configPath); err == nil {
+			return configPath, true
+		}
+	}
+
+	// Fall back to searching in PATH
+	path, err := exec.LookPath(toolName)
+	return path, err == nil
+}
+
 // augmentPATH adds common tool locations to PATH for finding executables
 // This is necessary because GUI apps don't inherit the full shell PATH
 func augmentPATH() {
@@ -154,14 +169,13 @@ func (a *App) startup(ctx context.Context) {
 	a.mu.Lock()
 	a.launchArgs = args
 
-	pandocOk := false
-	pdfOk := false
-	if _, err := exec.LookPath("pandoc"); err == nil {
-		pandocOk = true
-		if _, err := exec.LookPath("pdflatex"); err == nil {
-			pdfOk = true
-		}
-	}
+	// Check for tool availability, preferring configured paths
+	pandocPath := config.GetPandocPath()
+	pdflatexPath := config.GetPdflatexPath()
+
+	_, pandocOk := findTool("pandoc", pandocPath)
+	_, pdfOk := findTool("pdflatex", pdflatexPath)
+
 	a.pandocAvailable = pandocOk
 	a.pdfAvailable = pdfOk
 	a.mu.Unlock()
@@ -803,13 +817,15 @@ func (a *App) SetCurrentDocument(content string) {
 
 // CheckPandocAvailable checks if pandoc is installed
 func (a *App) CheckPandocAvailable() (bool, error) {
-	_, err := exec.LookPath("pandoc")
-	return err == nil, nil
+	configuredPath := config.GetPandocPath()
+	_, found := findTool("pandoc", configuredPath)
+	return found, nil
 }
 
 func (a *App) CheckPDFAvailable() (bool, error) {
-	_, err := exec.LookPath("pdflatex")
-	return err == nil, nil
+	configuredPath := config.GetPdflatexPath()
+	_, found := findTool("pdflatex", configuredPath)
+	return found, nil
 }
 
 func (a *App) GetExportFormats() ([]ExportFormat, error) {
@@ -843,9 +859,16 @@ func (a *App) ExportFile(inputPath, format, outputPath string) (ExportResult, er
 		return ExportResult{Success: false, Error: "PDF export requires LaTeX (pdflatex)"}, nil
 	}
 
+	// Get the configured or found pandoc path
+	configuredPandoc := config.GetPandocPath()
+	pandocExec, found := findTool("pandoc", configuredPandoc)
+	if !found {
+		return ExportResult{Success: false, Error: "pandoc executable not found"}, nil
+	}
+
 	args := []string{inputPath, "-o", outputPath}
 
-	cmd := exec.Command("pandoc", args...)
+	cmd := exec.Command(pandocExec, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return ExportResult{Success: false, Error: fmt.Sprintf("pandoc failed: %w\nOutput: %s", err, string(output))}, nil

@@ -395,3 +395,41 @@ func SetSearchHighlightColor(color string) error {
 	cfg["searchHighlightColor"] = color
 	return WriteConfig(cfg)
 }
+
+// GetPandocPath returns the configured pandoc path, or empty string if not set
+func GetPandocPath() string {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(cfg["pandocPath"])
+}
+
+// SetPandocPath sets the pandoc path in config
+func SetPandocPath(path string) error {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return err
+	}
+	cfg["pandocPath"] = strings.TrimSpace(path)
+	return WriteConfig(cfg)
+}
+
+// GetPdflatexPath returns the configured pdflatex path, or empty string if not set
+func GetPdflatexPath() string {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(cfg["pdflatexPath"])
+}
+
+// SetPdflatexPath sets the pdflatex path in config
+func SetPdflatexPath(path string) error {
+	cfg, err := ReadConfig()
+	if err != nil {
+		return err
+	}
+	cfg["pdflatexPath"] = strings.TrimSpace(path)
+	return WriteConfig(cfg)
+}
