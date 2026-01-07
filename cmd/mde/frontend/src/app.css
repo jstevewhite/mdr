@@ -26,6 +26,7 @@ body.palette-light {
     color: var(--mde-fg);
     border-bottom: 1px solid var(--mde-border);
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .brand {

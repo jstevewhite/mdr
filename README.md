@@ -42,6 +42,7 @@ There's an issue where it's slow to load using the UI in macOS. It's got somethi
 - Automatic file association handling
 - **Keyboard shortcuts** for common operations
 - **Vim mode** option for Vim users
+- **Responsive toolbar** that wraps on smaller screens
 
 ### Configuration
 
