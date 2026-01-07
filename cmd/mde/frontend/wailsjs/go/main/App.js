@@ -62,6 +62,10 @@ export function SaveFileAs(arg1) {
   return window['go']['main']['App']['SaveFileAs'](arg1);
 }
 
+export function SelectImageFile() {
+  return window['go']['main']['App']['SelectImageFile']();
+}
+
 export function SetDirty(arg1) {
   return window['go']['main']['App']['SetDirty'](arg1);
 }

@@ -198,6 +198,27 @@ func (a *App) SaveFileAs(content string) error {
 	return nil
 }
 
+// SelectImageFile opens a file dialog to select an image file and returns the path
+func (a *App) SelectImageFile() (string, error) {
+	selection, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Image",
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Images (*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp;*.svg)",
+				Pattern:     "*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp;*.svg",
+			},
+			{
+				DisplayName: "All Files (*.*)",
+				Pattern:     "*.*",
+			},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return selection, nil
+}
+
 // GetCurrentPath returns the current file path
 func (a *App) GetCurrentPath() string {
 	a.mu.Lock()

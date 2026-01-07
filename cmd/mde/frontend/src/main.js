@@ -156,6 +156,7 @@ function setupToolbar() {
     document.getElementById('btn-numlist').addEventListener('click', () => insertAtCursor(editorView, '1. '))
     document.getElementById('btn-quote').addEventListener('click', () => insertAtCursor(editorView, '> '))
     document.getElementById('btn-link').addEventListener('click', insertLink)
+    document.getElementById('btn-image').addEventListener('click', insertImage)
 
     // Theme
     document.getElementById('theme-select').addEventListener('change', changeTheme)
@@ -179,7 +180,15 @@ function setupKeyboardShortcuts() {
                 case 's': e.preventDefault(); saveFile(); break
                 case 'p': e.preventDefault(); openPreview(); break
                 case 'b': e.preventDefault(); wrapSelection(editorView, '**', '**'); break
-                case 'i': e.preventDefault(); wrapSelection(editorView, '*', '*'); break
+                case 'i': 
+                    if (e.shiftKey) {
+                        e.preventDefault(); 
+                        insertImage(); 
+                    } else {
+                        e.preventDefault(); 
+                        wrapSelection(editorView, '*', '*'); 
+                    }
+                    break
                 case 'k': e.preventDefault(); insertLink(); break
                 case '`': e.preventDefault(); wrapSelection(editorView, '`', '`'); break
                 case 'w': e.preventDefault(); toggleWordWrapFromShortcut(); break
@@ -321,6 +330,38 @@ function insertLink() {
     if (url) {
         wrapSelection(editorView, '[', `](${url})`)
     }
+}
+
+async function insertImage() {
+    const altText = prompt('Enter alt text (description):')
+    if (altText === null) return // User cancelled
+    
+    const choice = confirm('Click OK to browse for an image file, or Cancel to enter a path/URL manually.')
+    let imagePath = ''
+    
+    if (choice) {
+        // Browse for file
+        try {
+            imagePath = await window.go.main.App.SelectImageFile()
+            if (!imagePath) return // User cancelled file dialog
+        } catch (err) {
+            console.error('Error selecting image:', err)
+            alert('Error selecting image file')
+            return
+        }
+    } else {
+        // Manual entry
+        imagePath = prompt('Enter image path or URL:')
+        if (!imagePath) return // User cancelled or entered nothing
+    }
+    
+    const text = `![${altText}](${imagePath})`
+    const state = editorView.state
+    const selection = state.selection.main
+    editorView.dispatch({
+        changes: { from: selection.from, to: selection.to, insert: text },
+        selection: { anchor: selection.from + text.length }
+    })
 }
 
 function handleContentChange(content) {

@@ -16,6 +16,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
 
 type renderTheme string
@@ -113,7 +114,8 @@ func sanitizer() *bluemonday.Policy {
 }
 
 func applyCSP(page string) (string, error) {
-	// Updated CSP to allow Mermaid.js to work
+	// Updated CSP to allow Mermaid.js and local file images to work
+	// 'self' allows images from /localfile/ path
 	csp := "default-src 'none'; style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' data:; script-src 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'none'; media-src 'self' data:; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
 	tag := fmt.Sprintf(`<meta http-equiv="Content-Security-Policy" content="%s">`, template.HTMLEscapeString(csp))
 	page = strings.Replace(page, "<head>", "<head>"+tag, 1)
@@ -166,6 +168,11 @@ func extractTOC(source []byte, node ast.Node) []TOCItem {
 
 // RenderMarkdownWithTOC renders markdown and returns HTML with TOC
 func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fontScale int) (RenderOutput, error) {
+	return RenderMarkdownWithTOCAndPath(markdown, themeName, palette, fontScale, "")
+}
+
+// RenderMarkdownWithTOCAndPath renders markdown with a file path context for resolving relative image paths
+func RenderMarkdownWithTOCAndPath(markdown string, themeName string, palette string, fontScale int, markdownPath string) (RenderOutput, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
@@ -179,6 +186,9 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
+			parser.WithASTTransformers(
+				util.Prioritized(NewImageTransformer(markdownPath), 100),
+			),
 		),
 	)
 
@@ -209,7 +219,7 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 	// Goldmark renders fenced blocks as: <pre><code class="language-mermaid">...</code></pre>
 	// Mermaid expects diagram text inside an element with class="mermaid".
 	// So we rewrite those code blocks into <div class="mermaid">...</div> and then render.
-		mermaidScript := `<script src='https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js'></script>
+	mermaidScript := `<script src='https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js'></script>
 <script>
 (function() {
   function renderMermaid() {
@@ -271,7 +281,7 @@ func RenderMarkdownWithTOC(markdown string, themeName string, palette string, fo
 })();
 </script>`
 
-	page := fmt.Sprintf("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>%s%s%s</style>%s</head><body class=\"palette-%s\"><div id=\"wrapper\">{{.Body}}</div></body></html>", baseCSS, layoutCSS, palCSS, mermaidScript, pMode)
+	page := fmt.Sprintf("<!DOCTYPE html><html><head><base href=\"/\"><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><style>%s%s%s</style>%s</head><body class=\"palette-%s\"><div id=\"wrapper\">{{.Body}}</div></body></html>", baseCSS, layoutCSS, palCSS, mermaidScript, pMode)
 	if updated, err := applyCSP(page); err == nil {
 		page = updated
 	}

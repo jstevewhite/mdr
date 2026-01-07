@@ -79,11 +79,11 @@ func augmentPATH() {
 
 	// Common locations for tools across platforms
 	additionalPaths := []string{
-		"/opt/homebrew/bin",      // Homebrew on Apple Silicon
+		"/opt/homebrew/bin", // Homebrew on Apple Silicon
 		"/opt/homebrew/sbin",
-		"/usr/local/bin",         // Homebrew on Intel Macs, common on Linux
+		"/usr/local/bin", // Homebrew on Intel Macs, common on Linux
 		"/usr/local/sbin",
-		"/snap/bin",              // Snap packages on Linux
+		"/snap/bin", // Snap packages on Linux
 	}
 
 	// Add user home-relative paths if home directory is available
@@ -95,8 +95,8 @@ func augmentPATH() {
 
 	// Add TeX Live paths - check for latest version or common locations
 	texlivePaths := []string{
-		"/usr/local/texlive",     // Standard TeX Live installation
-		"/Library/TeX/texbin",    // MacTeX symlinks
+		"/usr/local/texlive",  // Standard TeX Live installation
+		"/Library/TeX/texbin", // MacTeX symlinks
 	}
 
 	for _, basePath := range texlivePaths {
@@ -437,7 +437,7 @@ func (a *App) RenderFileWithPaletteAndTOC(path string, theme string, palette str
 	// Store document content for searching
 	a.SetCurrentDocument(markdown)
 
-	output, err := RenderMarkdownWithTOC(markdown, theme, palette, config.GetFontScale())
+	output, err := RenderMarkdownWithTOCAndPath(markdown, theme, palette, config.GetFontScale(), path)
 	if err != nil {
 		return RenderResult{}, err
 	}

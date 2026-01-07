@@ -31,6 +31,8 @@ export function SaveFile(arg1:string):Promise<void>;
 
 export function SaveFileAs(arg1:string):Promise<void>;
 
+export function SelectImageFile():Promise<string>;
+
 export function SetDirty(arg1:boolean):Promise<void>;
 
 export function SetFontScale(arg1:number):Promise<void>;

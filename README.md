@@ -4,20 +4,32 @@ A cross-platform Markdown viewer (`mdr`) and editor (`mde`) built with Wails.
 
 This application is largely the result of working with various AI (Gemini, Claude, GPT, Deepseek, and Qwen3-coder) and countless cycles of 'wait, not like that'. The architecture is mine, the code is mostly not, though I did have to jump in a few times and fix things. I wanted a simple application for rendering and editing Markdown on my Mac and my Asus Ascent GX10, so those are the platforms it's been tested on. I don't have a Windows box, which is why it isn't tested, but the AIs assure me it should build and work if someone wants to try it. I tried to make it fast and light.
 
-There's an issue where it's slow to load using the UI in macOS. It's got something to do with signing. I'll figure it out.
-
 ## mdr - Markdown Viewer
 
 `mdr` is a real-time Markdown viewer that reloads automatically when files change. It's perfect for viewing rendered Markdown alongside your favorite text editor. It's also great for quickly viewing any README.md file.
+
+**Screenshot**
+
+![mdr Screenshot](file:///home/stwhite/external/mdr/support/mdr-markdown-viewer-dark-ui.png)
 
 ## mde - Markdown Editor
 
 `mde` is a focused Markdown editor with syntax highlighting and live preview integration with mdr. Edit your Markdown with syntax coloring, then click Preview to see it rendered in mdr.
 
+**Screenshot**
+
+![mde Screenshot](file:///home/stwhite/external/mdr/support/mde-markdown-readme-dracula-theme.png)
+
 ## Features
 
 ### mdr (Viewer)
 - Open and render local Markdown files
+- **Local image support** - display images from local filesystem with multiple path formats:
+  - Absolute paths: `/path/to/image.png`
+  - Relative paths: `./images/pic.png` or `../images/pic.png`
+  - Tilde paths: `~/images/pic.png`
+  - file:// URLs: `file:///absolute/path/to/image.png`
+  - HTTP/HTTPS URLs and data URIs also supported
 - Table of Contents sidebar with pin/toggle
 - Auto-reload for files and custom themes (works with atomic-save editors)
 - Layout themes via user CSS files in `~/.config/mdr/mdthemes/`
@@ -37,7 +49,8 @@ There's an issue where it's slow to load using the UI in macOS. It's got somethi
 - Font size controls with persistence
 - **Word wrap toggle** with persistence
 - **Preview button** to view rendered output in mdr
-- Markdown formatting toolbar (headings, bold, italic, lists, links, etc.)
+- Markdown formatting toolbar (headings, bold, italic, lists, links, **images**, etc.)
+- **Image insertion** with file picker dialog or manual path entry
 - Real-time character and cursor position display
 - Automatic file association handling
 - **Keyboard shortcuts** for common operations
@@ -56,6 +69,7 @@ There's an issue where it's slow to load using the UI in macOS. It's got somethi
 - `palette`, `theme`, `fontScale`, `wordWrap`, `vimMode`
 
 **Example configuration for custom tool paths:**
+
 ```ini
 # ~/.config/mdr/mdr.conf
 pandocPath=/opt/homebrew/bin/pandoc
@@ -67,12 +81,14 @@ pdflatexPath=/usr/local/texlive/2025basic/bin/universal-darwin/pdflatex
 mdr supports [Mermaid](https://mermaid.js.org/) diagrams out of the box. Simply use a fenced code block with the `mermaid` language identifier:
 
 ````markdown
+
 ```mermaid
 graph TD
     A[Start] --> B{Decision}
     B -->|Yes| C[Success]
     B -->|No| D[Retry]
 ```
+
 ````
 
 Supported diagram types include:
@@ -128,6 +144,7 @@ See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax detail
 - **Bold**: `Ctrl+B` (Windows/Linux) / `Cmd+B` (Mac)
 - **Italic**: `Ctrl+I` (Windows/Linux) / `Cmd+I` (Mac)
 - **Insert Link**: `Ctrl+K` (Windows/Linux) / `Cmd+K` (Mac)
+- **Insert Image**: `Ctrl+Shift+I` (Windows/Linux) / `Cmd+Shift+I` (Mac)
 - **Code**: `Ctrl+`` (Windows/Linux) / `Cmd+`` (Mac)
 
 #### Editor Options
@@ -135,7 +152,7 @@ See the [Mermaid documentation](https://mermaid.js.org/intro/) for syntax detail
 
 Security notes:
 
-- Markdown is sanitized before rendering; the preview iframe is sandboxed with a strict CSP.  
+- Markdown is sanitized before rendering; the preview iframe is sandboxed with a strict CSP.
 - To deliberately allow raw, unsafe HTML (not recommended), set `MDR_UNSAFE_HTML=true` before launching.
 
 ## Development
@@ -145,6 +162,7 @@ Security notes:
 ## Building
 
 Build both applications:
+
 ```bash
 make mdr        # Build mdr viewer
 make mde        # Build mde editor
@@ -156,11 +174,13 @@ make build      # Build both
 ### MacOS
 
 Run `make install` to build and install both applications:
+
 ```bash
 make install    # Installs both mdr and mde
 ```
 
 Or install individually:
+
 ```bash
 make install-mdr    # Install mdr only
 make install-mde    # Install mde only
