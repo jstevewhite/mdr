@@ -1,0 +1,142 @@
+name: Release macOS
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (e.g. v0.0.0-test1) — builds and signs but does NOT create a GitHub release'
+        required: true
+        default: 'v0.0.0-test'
+
+jobs:
+  release-macos:
+    runs-on: macos-14
+    permissions:
+      contents: write  # required by softprops/action-gh-release to create/update releases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.version }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "bare=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Import signing certificate into temp keychain
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$HOME/Library/Keychains/mdr-ci.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 32)
+          echo "$APPLE_CERTIFICATE" | base64 --decode > /tmp/mdr-cert.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import /tmp/mdr-cert.p12 -k "$KEYCHAIN_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          CURRENT=$(security list-keychains -d user | xargs)
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $CURRENT
+          security set-key-partition-list -S apple-tool:,apple: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          rm /tmp/mdr-cert.p12
+
+      - name: Build
+        run: make build
+
+      - name: Sign .app bundle
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          codesign --deep --force --options runtime --timestamp \
+            --sign "$APPLE_SIGNING_IDENTITY" \
+            build/bin/mdr.app
+          codesign --verify --deep --strict --verbose=2 build/bin/mdr.app
+
+      - name: Notarize .app bundle
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ditto -c -k --keepParent build/bin/mdr.app /tmp/mdr-app.zip
+          xcrun notarytool submit /tmp/mdr-app.zip \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_PASSWORD" \
+            --wait
+          xcrun stapler staple build/bin/mdr.app
+          rm /tmp/mdr-app.zip
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build DMG
+        id: dmg
+        run: |
+          BARE="${{ steps.ver.outputs.bare }}"
+          DMG="mdr-${BARE}-aarch64.dmg"
+          create-dmg \
+            --volname "mdr" \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 450 200 \
+            "${DMG}" \
+            build/bin/mdr.app
+          echo "name=${DMG}" >> "$GITHUB_OUTPUT"
+
+      - name: Sign DMG
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          codesign --force --sign "$APPLE_SIGNING_IDENTITY" \
+            "${{ steps.dmg.outputs.name }}"
+
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DMG="${{ steps.dmg.outputs.name }}"
+          xcrun notarytool submit "${DMG}" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_PASSWORD" \
+            --wait
+          xcrun stapler staple "${DMG}"
+
+      - name: Upload artifacts to GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.dmg.outputs.name }}
+
+      - name: Delete temp keychain
+        if: always()
+        run: |
+          security delete-keychain \
+            "$HOME/Library/Keychains/mdr-ci.keychain-db" 2>/dev/null || true
